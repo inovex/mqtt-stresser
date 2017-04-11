@@ -25,7 +25,7 @@ See ``mqtt-stresser -h`` for a list of available arguments.
 
 ## Run
 
-Native:
+Simple hello-world test using the public ``broker.mqttdashboard.com`` broker: (please don't DDoS them :))
 
 ```
 $ mqtt-stresser -broker tcp://broker.mqttdashboard.com:1883 -num-clients 100 -num-messages 10 -rampup-delay 1s -rampup-size 10 -global-timeout 180s -timeout 20s
