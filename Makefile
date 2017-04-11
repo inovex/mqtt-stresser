@@ -13,6 +13,18 @@ all: windows darwin linux
 clean:
 	rm -rf build/
 
+fmt:
+	@gofmt -l -w $(sources)
+
+vendor-deps:
+	@echo ">> Fetching dependencies"
+	go get github.com/rancher/trash
+
+vendor: vendor-deps
+	rm -r vendor/
+	${GOPATH}/bin/trash -u
+	${GOPATH}/bin/trash
+
 ##### LINUX #####
 linux: build/mqtt-stresser-linux-amd64.tar.gz
 
@@ -34,11 +46,3 @@ build/mqtt-stresser-windows-amd64.zip: $(sources)
 	$(call build,windows,amd64,.exe)
 	$(call zip,windows,amd64,.exe)
 
-vendor-deps:
-	@echo ">> Fetching dependencies"
-	go get github.com/rancher/trash
-
-vendor: vendor-deps
-	rm -r vendor/
-	${GOPATH}/bin/trash -u
-	${GOPATH}/bin/trash
