@@ -21,9 +21,9 @@ var (
 	tearDownInProgress = false
 	randomSource       = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	subscriberClientIdTemplate = "mqtt-stresser-sub-%d-%d"
-	publisherClientIdTemplate  = "mqtt-stresser-pub-%d-%d"
-	topicNameTemplate          = "internal/mqtt-stresser/endToEndXx-%d-%d"
+	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-%d-%d"
+	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-%d-%d"
+	topicNameTemplate          = "internal/mqtt-stresser/endToEndXx-%s-%d-%d"
 
 	opTimeout = 5 * time.Second
 

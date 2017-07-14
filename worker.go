@@ -14,9 +14,14 @@ func (w *Worker) Run() {
 	cid := w.WorkerId
 	t := randomSource.Int31()
 
-	topicName := fmt.Sprintf(topicNameTemplate, w.WorkerId, t)
-	subscriberClientId := fmt.Sprintf(subscriberClientIdTemplate, w.WorkerId, t)
-	publisherClientId := fmt.Sprintf(publisherClientIdTemplate, w.WorkerId, t)
+	hostname, err := os.Hostname()
+	if err != nil {
+		panic(err)
+	}
+
+	topicName := fmt.Sprintf(topicNameTemplate, hostname, w.WorkerId, t)
+	subscriberClientId := fmt.Sprintf(subscriberClientIdTemplate, hostname, w.WorkerId, t,)
+	publisherClientId := fmt.Sprintf(publisherClientIdTemplate, hostname, w.WorkerId, t)
 
 	verboseLogger.Printf("[%d] topic=%s subscriberClientId=%s publisherClientId=%s\n", cid, topicName, subscriberClientId, publisherClientId)
 
