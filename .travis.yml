@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.8.x
+
+before_install:
+  - set -e
+
+script:
+  - make all
