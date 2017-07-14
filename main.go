@@ -23,7 +23,7 @@ var (
 
 	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-%d-%d"
 	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-%d-%d"
-	topicNameTemplate          = "internal/mqtt-stresser/endToEndXx-%s-%d-%d"
+	topicNameTemplate          = "internal/mqtt-stresser/%s/%d-%d"
 
 	opTimeout = 5 * time.Second
 
