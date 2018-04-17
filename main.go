@@ -32,6 +32,8 @@ var (
 
 	argNumClients    = flag.Int("num-clients", 10, "Number of concurrent clients")
 	argNumMessages   = flag.Int("num-messages", 10, "Number of messages shipped by client")
+	argMessageFreq   = flag.Int("message-frequency", "30s", "Frequency of message shipped by client")
+	argMessageString = flag.Int("message-string", "Hello world #%d!", "Message shipped by client")
 	argTimeout       = flag.String("timeout", "5s", "Timeout for pub/sub loop")
 	argGlobalTimeout = flag.String("global-timeout", "60s", "Timeout spanning all operations")
 	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch")
@@ -53,6 +55,8 @@ type Worker struct {
 	Username  string
 	Password  string
 	Nmessages int
+	MsgFreq int,
+	MsgString string,
 	Timeout   time.Duration
 }
 
@@ -88,6 +92,8 @@ func main() {
 	}
 
 	num := *argNumMessages
+	msgFreq := *argMessageFreq
+	msgString := *argMessageString
 	brokerUrl := *argBrokerUrl
 	username := *argUsername
 	password := *argPassword
@@ -133,6 +139,8 @@ func main() {
 			Username:  username,
 			Password:  password,
 			Nmessages: num,
+			MsgFreq: msgFreq,
+			MsgString: msgString,
 			Timeout:   testTimeout,
 		}).Run()
 	}
@@ -190,6 +198,7 @@ func main() {
 	exitCode := 0
 
 	if err != nil {
+		errorLogger.Println(err)
 		exitCode = 1
 	} else {
 		printSummary(summary)
