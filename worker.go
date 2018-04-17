@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
@@ -25,9 +27,17 @@ func (w *Worker) Run() {
 
 	verboseLogger.Printf("[%d] topic=%s subscriberClientId=%s publisherClientId=%s\n", cid, topicName, subscriberClientId, publisherClientId)
 
-	publisherOptions := mqtt.NewClientOptions().SetClientID(publisherClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
+	publisherOptions := mqtt.NewClientOptions().SetTLSConfig(&tls.Config{
+		RootCAs:            x509.NewCertPool(),
+		ClientAuth:         tls.NoClientCert,
+		ClientCAs:          x509.NewCertPool(),
+		InsecureSkipVerify: true}).SetClientID(publisherClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
-	subscriberOptions := mqtt.NewClientOptions().SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
+	subscriberOptions := mqtt.NewClientOptions().SetTLSConfig(&tls.Config{
+		RootCAs:            x509.NewCertPool(),
+		ClientAuth:         tls.NoClientCert,
+		ClientCAs:          x509.NewCertPool(),
+		InsecureSkipVerify: true}).SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 		queue <- [2]string{msg.Topic(), string(msg.Payload())}
@@ -71,7 +81,7 @@ func (w *Worker) Run() {
 	}()
 
 	verboseLogger.Printf("[%d] subscribing to topic\n", w.WorkerId)
-	if token := subscriber.Subscribe(topicName, 0, nil); token.WaitTimeout(opTimeout) && token.Error() != nil {
+	if token := subscriber.Subscribe(topicName, 1, nil); token.WaitTimeout(opTimeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
 			Event:        "SubscribeFailed",
@@ -91,10 +101,13 @@ func (w *Worker) Run() {
 
 	t0 := time.Now()
 	for i := 0; i < w.Nmessages; i++ {
-		text := fmt.Sprintf("this is msg #%d!", i)
-		token := publisher.Publish(topicName, 0, false, text)
+		text := fmt.Sprintf(w.MsgString, i)
+		frequency, _ := time.ParseDuration(w.MsgFreq)
+		time.Sleep(frequency)
+		token := publisher.Publish(topicName, 1, false, text)
 		publishedCount++
 		token.Wait()
+		verboseLogger.Printf("[%d] %d/%d Messages published after sleep\n", w.WorkerId, publishedCount, w.Nmessages)
 	}
 	publisher.Disconnect(5)
 
