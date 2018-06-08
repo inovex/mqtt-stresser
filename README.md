@@ -15,9 +15,13 @@ This will build the mqtt stresser for all target platforms and write them to the
 
 Binaries are provided on Github, see https://github.com/inovex/mqtt-stresser.
 
+If you want to build the Docker container version of this, go to repository directory and simply type ``docker build .``
+
 ## Install
 
 Place the binary somewhere in a ``PATH`` directory and make it executable (``chmod +x mqtt-stresser``).
+
+If you are using the container version, just type ``docker run flaviostutz/mqtt-stresser [options]`` for running mqtt-stresser.
 
 ## Configure
 
@@ -81,4 +85,9 @@ Median: 293 msg/sec
   < 217 msg/sec  8%
   < 171 msg/sec  2%
   < 79 msg/sec  1%
+```
+
+If using container, 
+```
+$ docker run flaviostutz/mqtt-stresser -broker tcp://broker.mqttdashboard.com:1883 -num-clients 100 -num-messages 10 -rampup-delay 1s -rampup-size 10 -global-timeout 180s -timeout 20s
 ```
