@@ -7,9 +7,10 @@ static-build = CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/
 tar = cd build && tar -cvzf mqtt-stresser-$(1)-$(2).tar.gz $(appname)$(3) && rm $(appname)$(3)
 zip = cd build && zip mqtt-stresser-$(1)-$(2).zip $(appname)$(3) && rm $(appname)$(3)
 
-.PHONY: all windows darwin linux clean container
+.PHONY: all windows darwin linux clean container push-container
 
 all: windows darwin linux
+
 
 clean:
 	rm -rf build/
@@ -53,9 +54,13 @@ build/mqtt-stresser-windows-amd64.zip: $(sources)
 
 ##### DOCKER #####
 container:
-	docker build -t $(namespace)/$(appname) .
+	docker build \
+		--build-arg BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")\
+		--build-arg VCS_REF=$(shell git rev-parse --short HEAD) \
+	 	--build-arg VERSION=$(shell git describe --all | sed  -e  's%tags/%%g'  -e 's%/%.%g' ) \
+	 	-t $(namespace)/$(appname) .
 
-push-container: container
+push-container:
 	docker tag $(namespace)/$(appname) $(namespace)/$(appname):$(VERSION)
 	docker push $(namespace)/$(appname):$(VERSION)
 
