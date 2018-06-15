@@ -1,5 +1,5 @@
 appname := mqtt-stresser
-
+namespace := inovex
 sources := $(wildcard *.go)
 
 build = GOOS=$(1) GOARCH=$(2) go build -o build/$(appname)$(3)
@@ -7,7 +7,7 @@ static-build = CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o build/
 tar = cd build && tar -cvzf mqtt-stresser-$(1)-$(2).tar.gz $(appname)$(3) && rm $(appname)$(3)
 zip = cd build && zip mqtt-stresser-$(1)-$(2).zip $(appname)$(3) && rm $(appname)$(3)
 
-.PHONY: all windows darwin linux clean
+.PHONY: all windows darwin linux clean container
 
 all: windows darwin linux
 
@@ -49,4 +49,13 @@ windows: build/mqtt-stresser-windows-amd64.zip
 build/mqtt-stresser-windows-amd64.zip: $(sources)
 	$(call build,windows,amd64,.exe)
 	$(call zip,windows,amd64,.exe)
+
+
+##### DOCKER #####
+container:
+	docker build -t $(namespace)/$(appname) .
+
+push-container: container
+	docker tag $(namespace)/$(appname) $(namespace)/$(appname):$(VERSION)
+	docker push $(namespace)/$(appname):$(VERSION)
 
