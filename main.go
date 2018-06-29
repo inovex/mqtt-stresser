@@ -72,6 +72,9 @@ func main() {
 
 	if flag.NFlag() < 1 || *argHelp {
 		flag.Usage()
+		if *argHelp {
+			os.Exit(0)
+		}
 		os.Exit(1)
 	}
 
