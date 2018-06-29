@@ -17,7 +17,7 @@ LABEL org.label-schema.vcs-url="https://github.com/inovex/mqtt-stresser"
 LABEL org.label-schema.vcs-ref=$VCS_REF
 LABEL org.label-schema.version=$VERSION
 
-COPY --from=builder /go/src/github.com/inovex/mqtt-stresser/build/mqtt-stresser.static /bin/mqtt-stresser
+COPY --from=builder /go/src/github.com/inovex/mqtt-stresser/build/mqtt-stresser-linux-amd64-static /bin/mqtt-stresser
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 ENTRYPOINT [ "/bin/mqtt-stresser" ]
