@@ -3,13 +3,13 @@ namespace := inovex
 sources := $(wildcard *.go)
 
 build = GOOS=$(1) GOARCH=$(2) go build -o build/$(appname)-$(1)-$(2)$(3)
-static-build = CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) go build -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)-static$(3) .
+static-build = CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) GOARM=$(4) go build -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)$(4)-static$(3) .
 tar = cd build && tar -cvzf $(appname)-$(1)-$(2).tar.gz $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 zip = cd build && zip $(appname)-$(1)-$(2).zip $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 
 .PHONY: all windows darwin linux clean container push-container windows-static darwin-static linux-static windows-compressed linux-compressed darwin-compressed
 
-all: windows darwin linux windows-static darwin-static linux-static
+all: windows darwin linux windows-static darwin-static linux-static-amd64 linux-static-arm5 linux-static-arm6 linux-static-arm7
 
 all-static: windows-static darwin-static linux-static
 
@@ -35,7 +35,10 @@ linux: build/$(appname)-linux-amd64
 
 linux-compressed: build/$(appname)-linux-amd64.tar.gz
 
-linux-static: build/$(appname)-linux-amd64-static
+linux-static-amd64: build/$(appname)-linux-amd64-static
+linux-static-arm5: build/$(appname)-linux-arm5-static
+linux-static-arm6: build/$(appname)-linux-arm6-static
+linux-static-arm7: build/$(appname)-linux-arm7-static
 
 build/$(appname)-linux-amd64:
 	$(call build,linux,amd64,)
@@ -45,6 +48,15 @@ build/$(appname)-linux-amd64.tar.gz: build/$(appname)-linux-amd64
 
 build/$(appname)-linux-amd64-static:
 	$(call static-build,linux,amd64,)
+
+build/$(appname)-linux-arm5-static:
+	$(call static-build,linux,arm,,5)
+
+build/$(appname)-linux-arm6-static:
+	$(call static-build,linux,arm,,6)
+
+build/$(appname)-linux-arm7-static:
+	$(call static-build,linux,arm,,7)
 
 
 ##### DARWIN (MAC) #####
