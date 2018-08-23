@@ -1,17 +1,23 @@
-FROM golang:1.10-alpine
+FROM golang:1.10-alpine as builder
 
-RUN apk add --update make git zip
+RUN apk add --update make
 
-ENV GOPATH /usr/local/go
+COPY . /go/src/github.com/inovex/mqtt-stresser
+WORKDIR /go/src/github.com/inovex/mqtt-stresser
+RUN make linux-static
 
-RUN mkdir -p ${GOPATH}/src/github.com/inovex/ && \
-    git clone https://github.com/inovex/mqtt-stresser.git ${GOPATH}/src/github.com/inovex/mqtt-stresser/
+FROM scratch
+ARG BUILD_DATE="1985-04-12T23:20:50.52Z"
+ARG VCS_REF=not-specified
+ARG VERSION=not-specified
+LABEL org.label-schema.schema-version="1.0"
+LABEL org.label-schema.build-date=$BUILD_DATE
+LABEL org.label-schema.name="mqtt-stresser"
+LABEL org.label-schema.vcs-url="https://github.com/inovex/mqtt-stresser"
+LABEL org.label-schema.vcs-ref=$VCS_REF
+LABEL org.label-schema.version=$VERSION
 
-RUN cd ${GOPATH}/src/github.com/inovex/mqtt-stresser/ && \
-    make
-
-RUN cd ${GOPATH}/src/github.com/inovex/mqtt-stresser/build && \
-    tar -xzvf mqtt-stresser-linux-amd64.tar.gz && \
-    cp mqtt-stresser /bin
+COPY --from=builder /go/src/github.com/inovex/mqtt-stresser/build/mqtt-stresser-linux-amd64-static /bin/mqtt-stresser
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
 ENTRYPOINT [ "/bin/mqtt-stresser" ]
