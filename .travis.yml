@@ -17,7 +17,7 @@ script:
 
 after_success:
   - |
-    if [[ -n "${TRAVIS_TAG?}" || "${TRAVIS_BRANCH?}" == master ]]; then
+    if [[ "${TRAVIS_PULL_REQUEST?}" != "false" ]] && [[ -n "${TRAVIS_TAG?}" || "${TRAVIS_BRANCH?}" == master ]]; then
       docker login -u "${DOCKER_USERNAME?}" -p "${DOCKER_PASSWORD?}"
       version=""
       if [[ -n "${TRAVIS_TAG?}" ]]; then
