@@ -51,7 +51,7 @@ func (w *Worker) Run(ctx context.Context) {
 	if token := publisher.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "ConnectFailed",
+			Event:        ConnectFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -62,7 +62,7 @@ func (w *Worker) Run(ctx context.Context) {
 	if token := subscriber.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "ConnectFailed",
+			Event:        ConnectFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -85,7 +85,7 @@ func (w *Worker) Run(ctx context.Context) {
 	if token := subscriber.Subscribe(topicName, 0, nil); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "SubscribeFailed",
+			Event:        SubscribeFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -121,7 +121,7 @@ func (w *Worker) Run(ctx context.Context) {
 			if receivedCount == w.NumberOfMessages {
 				resultChan <- Result{
 					WorkerId:          w.WorkerId,
-					Event:             "Completed",
+					Event:             CompletedEvent,
 					PublishTime:       publishTime,
 					ReceiveTime:       time.Since(t0),
 					MessagesReceived:  receivedCount,
@@ -130,7 +130,7 @@ func (w *Worker) Run(ctx context.Context) {
 			} else {
 				resultChan <- Result{
 					WorkerId:          w.WorkerId,
-					Event:             "ProgressReport",
+					Event:             ProgressReportEvent,
 					PublishTime:       publishTime,
 					ReceiveTime:       time.Since(t0),
 					MessagesReceived:  receivedCount,
@@ -143,11 +143,11 @@ func (w *Worker) Run(ctx context.Context) {
 			switch ctx.Err().(type) {
 			case TimeoutError:
 				verboseLogger.Printf("[%d] received abort signal due to test timeout", w.WorkerId)
-				event = "TimeoutExceeded"
+				event = TimeoutExceededEvent
 				isError = true
 			default:
 				verboseLogger.Printf("[%d] received abort signal", w.WorkerId)
-				event = "Aborted"
+				event = AbortedEvent
 				isError = false
 			}
 			stopWorker = true

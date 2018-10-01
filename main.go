@@ -165,7 +165,7 @@ func main() {
 		case msg := <-resultChan:
 			results[msg.WorkerId] = msg
 
-			if msg.Event == "Completed" || msg.Error {
+			if msg.Event == CompletedEvent || msg.Error {
 				finEvents++
 				verboseLogger.Printf("%d/%d events received\n", finEvents, *argNumClients)
 			}
@@ -175,7 +175,7 @@ func main() {
 			}
 
 			if *argHideProgress == false {
-				if msg.Event == "Completed" {
+				if msg.Event == CompletedEvent {
 					fmt.Print(".")
 				}
 
