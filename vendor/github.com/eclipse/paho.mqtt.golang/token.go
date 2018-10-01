@@ -25,7 +25,7 @@ import (
 //MQTT messages.
 type PacketAndToken struct {
 	p packets.ControlPacket
-	t Token
+	t tokenCompletor
 }
 
 //Token defines the interface for the tokens used to indicate when
@@ -33,8 +33,13 @@ type PacketAndToken struct {
 type Token interface {
 	Wait() bool
 	WaitTimeout(time.Duration) bool
-	flowComplete()
 	Error() error
+	setError(error)
+}
+
+type tokenCompletor interface {
+	Token
+	flowComplete()
 }
 
 type baseToken struct {
@@ -56,7 +61,7 @@ func (b *baseToken) Wait() bool {
 	return b.ready
 }
 
-// WaitTimeout takes a time in ms to wait for the flow associated with the
+// WaitTimeout takes a time.Duration to wait for the flow associated with the
 // Token to complete, returns true if it returned before the timeout or
 // returns false if the timeout occurred. In the case of a timeout the Token
 // does not have an error set in case the caller wishes to wait again
@@ -74,7 +79,11 @@ func (b *baseToken) WaitTimeout(d time.Duration) bool {
 }
 
 func (b *baseToken) flowComplete() {
-	close(b.complete)
+	select {
+	case <-b.complete:
+	default:
+		close(b.complete)
+	}
 }
 
 func (b *baseToken) Error() error {
@@ -83,7 +92,14 @@ func (b *baseToken) Error() error {
 	return b.err
 }
 
-func newToken(tType byte) Token {
+func (b *baseToken) setError(e error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	b.err = e
+	b.flowComplete()
+}
+
+func newToken(tType byte) tokenCompletor {
 	switch tType {
 	case packets.Connect:
 		return &ConnectToken{baseToken: baseToken{complete: make(chan struct{})}}
