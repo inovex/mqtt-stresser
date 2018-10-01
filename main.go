@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +17,6 @@ import (
 
 var (
 	resultChan         = make(chan Result)
-	abortChan          = make(chan bool)
 	stopWaitLoop       = false
 	tearDownInProgress = false
 	randomSource       = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -25,16 +25,14 @@ var (
 	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-worker%d-%d"
 	topicNameTemplate          = "internal/mqtt-stresser/%s/worker%d-%d"
 
-	opTimeout = 5 * time.Second
-
 	errorLogger   = log.New(os.Stderr, "ERROR: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 	verboseLogger = log.New(os.Stderr, "DEBUG: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 
 	argNumClients    = flag.Int("num-clients", 10, "Number of concurrent clients")
 	argNumMessages   = flag.Int("num-messages", 10, "Number of messages shipped by client")
-	argTimeout       = flag.String("timeout", "5s", "Timeout for pub/sub loop")
+	argTimeout       = flag.String("timeout", "5s", "Timeout for pub/sub actions")
 	argGlobalTimeout = flag.String("global-timeout", "60s", "Timeout spanning all operations")
-	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch")
+	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch. Minimal rampup batch size is 100.")
 	argRampUpDelay   = flag.String("rampup-delay", "500ms", "Time between batch rampups")
 	argTearDownDelay = flag.String("teardown-delay", "5s", "Graceperiod to complete remaining workers")
 	argBrokerUrl     = flag.String("broker", "", "Broker URL")
@@ -47,15 +45,6 @@ var (
 	argHelp          = flag.Bool("help", false, "Show help")
 )
 
-type Worker struct {
-	WorkerId  int
-	BrokerUrl string
-	Username  string
-	Password  string
-	Nmessages int
-	Timeout   time.Duration
-}
-
 type Result struct {
 	WorkerId          int
 	Event             string
@@ -65,6 +54,11 @@ type Result struct {
 	MessagesPublished int
 	Error             bool
 	ErrorMessage      error
+}
+
+type TimeoutError interface {
+	Timeout() bool
+	Error() string
 }
 
 func main() {
@@ -83,18 +77,23 @@ func main() {
 
 		if err != nil {
 			fmt.Printf("Could not create CPU profile: %s\n", err)
+			os.Exit(1)
 		}
 
 		if err := pprof.StartCPUProfile(f); err != nil {
 			fmt.Printf("Could not start CPU profile: %s\n", err)
+			os.Exit(1)
 		}
 	}
 
 	num := *argNumMessages
-	brokerUrl := *argBrokerUrl
 	username := *argUsername
 	password := *argPassword
-	testTimeout, _ := time.ParseDuration(*argTimeout)
+	actionTimeout, err := time.ParseDuration(*argTimeout)
+	if err != nil {
+		fmt.Printf("Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		os.Exit(1)
+	}
 
 	verboseLogger.SetOutput(ioutil.Discard)
 	errorLogger.SetOutput(ioutil.Discard)
@@ -107,7 +106,8 @@ func main() {
 		verboseLogger.SetOutput(os.Stderr)
 	}
 
-	if brokerUrl == "" {
+	if *argBrokerUrl == "" {
+		fmt.Println("'--broker' is empty. Abort.")
 		os.Exit(1)
 	}
 
@@ -123,34 +123,42 @@ func main() {
 
 	resultChan = make(chan Result, *argNumClients**argNumMessages)
 
-	for cid := 0; cid < *argNumClients; cid++ {
+	globalTimeout, err := time.ParseDuration(*argGlobalTimeout)
+	if err != nil {
+		fmt.Printf("Could not parse '--global-timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		os.Exit(1)
+	}
+	testCtx, cancelFunc := context.WithTimeout(context.Background(), globalTimeout)
+
+	stopStartLoop := false
+	for cid := 0; cid < *argNumClients && !stopStartLoop; cid++ {
 
 		if cid%rampUpSize == 0 && cid > 0 {
 			fmt.Printf("%d worker started - waiting %s\n", cid, rampUpDelay)
 			time.Sleep(rampUpDelay)
+			select {
+			case <-time.NewTimer(rampUpDelay).C:
+			case s := <-signalChan:
+				fmt.Printf("Got signal %s. Cancel test.\n", s.String())
+				cancelFunc()
+				stopStartLoop = true
+			}
 		}
 
 		go (&Worker{
-			WorkerId:  cid,
-			BrokerUrl: brokerUrl,
-			Username:  username,
-			Password:  password,
-			Nmessages: num,
-			Timeout:   testTimeout,
-		}).Run()
+			WorkerId:         cid,
+			BrokerUrl:        *argBrokerUrl,
+			Username:         username,
+			Password:         password,
+			NumberOfMessages: num,
+			Timeout:          actionTimeout,
+		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
 
 	finEvents := 0
 
-	timeout := make(chan bool, 1)
-	globalTimeout, _ := time.ParseDuration(*argGlobalTimeout)
 	results := make([]Result, *argNumClients)
-
-	go func() {
-		time.Sleep(globalTimeout)
-		timeout <- true
-	}()
 
 	for finEvents < *argNumClients && !stopWaitLoop {
 		select {
@@ -176,16 +184,19 @@ func main() {
 				}
 			}
 
-		case <-timeout:
-			fmt.Println()
-			fmt.Printf("Aborted because global timeout (%s) was reached.\n", *argGlobalTimeout)
-
-			go tearDownWorkers()
-		case signal := <-signalChan:
-			fmt.Println()
-			fmt.Printf("Received %s. Aborting.\n", signal)
-
-			go tearDownWorkers()
+		case <-testCtx.Done():
+			switch testCtx.Err().(type) {
+			case TimeoutError:
+				fmt.Println("Test timeout. Wait 5s to allow disconnection of clients.")
+			default:
+				fmt.Println("Test canceled. Wait 5s to allow disconnection of clients.")
+			}
+			time.Sleep(5 * time.Second)
+			stopWaitLoop = true
+		case s := <-signalChan:
+			fmt.Printf("Got signal %s. Cancel test.\n", s.String())
+			cancelFunc()
+			stopWaitLoop = true
 		}
 	}
 
@@ -216,18 +227,4 @@ func main() {
 	pprof.StopCPUProfile()
 
 	os.Exit(exitCode)
-}
-
-func tearDownWorkers() {
-	if !tearDownInProgress {
-		tearDownInProgress = true
-
-		close(abortChan)
-
-		delay, _ := time.ParseDuration(*argTearDownDelay)
-		fmt.Printf("Waiting %s for remaining workers\n", delay)
-		time.Sleep(delay)
-
-		stopWaitLoop = true
-	}
 }
