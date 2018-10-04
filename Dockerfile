@@ -4,7 +4,7 @@ RUN apk add --update make
 
 COPY . /go/src/github.com/inovex/mqtt-stresser
 WORKDIR /go/src/github.com/inovex/mqtt-stresser
-RUN make linux-static
+RUN make linux-static-amd64
 
 FROM scratch
 ARG BUILD_DATE="1985-04-12T23:20:50.52Z"
