@@ -79,13 +79,13 @@ build/$(appname)-darwin-amd64-static: $(sources)
 
 ##### WINDOWS #####
 
-windows: build/$(appname)-windows-amd64
+windows: build/$(appname)-windows-amd64.exe
 
 windows-compressed: build/$(appname)-windows-amd64.zip
 
 windows-static: build/$(appname)-windows-amd64-static
 
-build/$(appname)-windows-amd64: $(sources)
+build/$(appname)-windows-amd64.exe: $(sources)
 	$(call build,windows,amd64,.exe)
 
 build/$(appname)-windows-amd64.zip: build/$(appname)-windows-amd64
