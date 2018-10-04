@@ -49,13 +49,13 @@ build/$(appname)-linux-amd64.tar.gz: build/$(appname)-linux-amd64
 build/$(appname)-linux-amd64-static: $(sources)
 	$(call static-build,linux,amd64,)
 
-build/$(appname)-linux-arm5-static:
+build/$(appname)-linux-arm5-static: $(sources)
 	$(call static-build,linux,arm,,5)
 
-build/$(appname)-linux-arm6-static:
+build/$(appname)-linux-arm6-static: $(sources)
 	$(call static-build,linux,arm,,6)
 
-build/$(appname)-linux-arm7-static:
+build/$(appname)-linux-arm7-static: $(sources)
 	$(call static-build,linux,arm,,7)
 
 
