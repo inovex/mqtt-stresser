@@ -40,22 +40,22 @@ linux-static-arm5: build/$(appname)-linux-arm5-static
 linux-static-arm6: build/$(appname)-linux-arm6-static
 linux-static-arm7: build/$(appname)-linux-arm7-static
 
-build/$(appname)-linux-amd64:
+build/$(appname)-linux-amd64: $(sources)
 	$(call build,linux,amd64,)
 
 build/$(appname)-linux-amd64.tar.gz: build/$(appname)-linux-amd64
 	$(call tar,linux,amd64)
 
-build/$(appname)-linux-amd64-static:
+build/$(appname)-linux-amd64-static: $(sources)
 	$(call static-build,linux,amd64,)
 
-build/$(appname)-linux-arm5-static:
+build/$(appname)-linux-arm5-static: $(sources)
 	$(call static-build,linux,arm,,5)
 
-build/$(appname)-linux-arm6-static:
+build/$(appname)-linux-arm6-static: $(sources)
 	$(call static-build,linux,arm,,6)
 
-build/$(appname)-linux-arm7-static:
+build/$(appname)-linux-arm7-static: $(sources)
 	$(call static-build,linux,arm,,7)
 
 
@@ -66,26 +66,26 @@ darwin-compressed: build/$(appname)-darwin-amd64.tar.gz
 
 darwin-static: build/$(appname)-darwin-amd64-static
 
-build/$(appname)-darwin-amd64:
+build/$(appname)-darwin-amd64: $(sources)
 	$(call build,darwin,amd64,)
 
 build/$(appname)-darwin-amd64.tar.gz: build/$(appname)-darwin-amd64
 	$(call tar,darwin,amd64)
 
 
-build/$(appname)-darwin-amd64-static:
+build/$(appname)-darwin-amd64-static: $(sources)
 	$(call static-build,darwin,amd64,)
 
 
 ##### WINDOWS #####
 
-windows: build/$(appname)-windows-amd64
+windows: build/$(appname)-windows-amd64.exe
 
 windows-compressed: build/$(appname)-windows-amd64.zip
 
 windows-static: build/$(appname)-windows-amd64-static
 
-build/$(appname)-windows-amd64:
+build/$(appname)-windows-amd64.exe: $(sources)
 	$(call build,windows,amd64,.exe)
 
 build/$(appname)-windows-amd64.zip: build/$(appname)-windows-amd64
@@ -93,7 +93,7 @@ build/$(appname)-windows-amd64.zip: build/$(appname)-windows-amd64
 
 
 
-build/$(appname)-windows-amd64-static:
+build/$(appname)-windows-amd64-static: $(sources)
 	$(call static-build,windows,amd64,)
 
 
