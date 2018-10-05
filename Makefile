@@ -21,14 +21,6 @@ clean:
 fmt:
 	@gofmt -l -w $(sources)
 
-vendor-deps:
-	@echo ">> Fetching dependencies"
-	go get github.com/rancher/trash
-
-vendor: vendor-deps
-	rm -r vendor/
-	${GOPATH}/bin/trash -u
-	${GOPATH}/bin/trash
 
 ##### LINUX #####
 linux: build/$(appname)-linux-amd64
@@ -111,4 +103,25 @@ container: clean
 push-container:
 	docker tag $(namespace)/$(appname) $(namespace)/$(appname):$(VERSION)
 	docker push $(namespace)/$(appname):$(VERSION)
+
+##### Vendoring #####
+
+${GOPATH}/bin/dep:
+	go get -u github.com/golang/dep/cmd/dep
+
+Gopkg.lock: ${GOPATH}/bin/dep
+	${GOPATH}/bin/dep ensure --no-vendor
+
+Gopkg.toml: ${GOPATH}/bin/dep
+	${GOPATH}/bin/dep init
+
+vendor-update: Gopkg.toml Gopkg.lock
+	${GOPATH}/bin/dep ensure -update --no-vendor
+	${GOPATH}/bin/dep status
+	@echo "You can apply these updates via 'make vendor' or rollback via 'git checkout -- Gopkg.lock'"
+
+vendor: Gopkg.toml Gopkg.lock
+	rm -rf vendor/
+	${GOPATH}/bin/dep ensure -vendor-only
+	${GOPATH}/bin/dep status
 
