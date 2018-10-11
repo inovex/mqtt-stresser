@@ -32,7 +32,7 @@ var (
 	argNumMessages   = flag.Int("num-messages", 10, "Number of messages shipped by client")
 	argTimeout       = flag.String("timeout", "5s", "Timeout for pub/sub actions")
 	argGlobalTimeout = flag.String("global-timeout", "60s", "Timeout spanning all operations")
-	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch. Minimal rampup batch size is 100.")
+	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch. Default rampup batch size is 100.")
 	argRampUpDelay   = flag.String("rampup-delay", "500ms", "Time between batch rampups")
 	argTearDownDelay = flag.String("teardown-delay", "5s", "Graceperiod to complete remaining workers")
 	argBrokerUrl     = flag.String("broker", "", "Broker URL")
