@@ -6,6 +6,15 @@ import (
 	"sort"
 )
 
+const (
+	ConnectFailedEvent   = "ConnectFailed"
+	SubscribeFailedEvent = "SubscribeFailed"
+	TimeoutExceededEvent = "TimeoutExceeded"
+	AbortedEvent         = "Aborted"
+	CompletedEvent       = "Completed"
+	ProgressReportEvent  = "ProgressReport"
+)
+
 type Summary struct {
 	Clients           int
 	TotalMessages     int
@@ -60,26 +69,26 @@ func buildSummary(nClient int, nMessages int, results []Result) (Summary, error)
 			nErrors++
 
 			switch r.Event {
-			case "ConnectFailed":
+			case ConnectFailedEvent:
 				nConnectFailed++
-			case "SubscribeFailed":
+			case SubscribeFailedEvent:
 				nSubscribeFailed++
-			case "TimeoutExceeded":
+			case TimeoutExceededEvent:
 				nTimeoutExceeded++
-			case "Aborted":
+			case AbortedEvent:
 				nAborted++
 			}
 		}
 
-		if r.Event == "Completed" {
+		if r.Event == CompletedEvent {
 			nCompleted++
 		}
 
-		if r.Event == "ProgressReport" {
+		if r.Event == ProgressReportEvent {
 			nInProgress++
 		}
 
-		if r.Event == "Completed" || r.Event == "ProgressReport" {
+		if r.Event == CompletedEvent || r.Event == ProgressReportEvent {
 			publishPerformance = append(publishPerformance, float64(r.MessagesPublished)/r.PublishTime.Seconds())
 			receivePerformance = append(receivePerformance, float64(r.MessagesReceived)/r.ReceiveTime.Seconds())
 		}
