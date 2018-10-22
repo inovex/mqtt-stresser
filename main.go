@@ -28,21 +28,22 @@ var (
 	errorLogger   = log.New(os.Stderr, "ERROR: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 	verboseLogger = log.New(os.Stderr, "DEBUG: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 
-	argNumClients    = flag.Int("num-clients", 10, "Number of concurrent clients")
-	argNumMessages   = flag.Int("num-messages", 10, "Number of messages shipped by client")
-	argTimeout       = flag.String("timeout", "5s", "Timeout for pub/sub actions")
-	argGlobalTimeout = flag.String("global-timeout", "60s", "Timeout spanning all operations")
-	argRampUpSize    = flag.Int("rampup-size", 100, "Size of rampup batch. Default rampup batch size is 100.")
-	argRampUpDelay   = flag.String("rampup-delay", "500ms", "Time between batch rampups")
-	argTearDownDelay = flag.String("teardown-delay", "5s", "Graceperiod to complete remaining workers")
-	argBrokerUrl     = flag.String("broker", "", "Broker URL")
-	argUsername      = flag.String("username", "", "Username")
-	argPassword      = flag.String("password", "", "Password")
-	argLogLevel      = flag.Int("log-level", 0, "Log level (0=nothing, 1=errors, 2=debug, 3=error+debug)")
-	argProfileCpu    = flag.String("profile-cpu", "", "write cpu profile `file`")
-	argProfileMem    = flag.String("profile-mem", "", "write memory profile to `file`")
-	argHideProgress  = flag.Bool("no-progress", false, "Hide progress indicator")
-	argHelp          = flag.Bool("help", false, "Show help")
+	argNumClients         = flag.Int("num-clients", 10, "Number of concurrent clients")
+	argNumMessages        = flag.Int("num-messages", 10, "Number of messages shipped by client")
+	argTimeout            = flag.String("timeout", "5s", "Timeout for pub/sub actions")
+	argGlobalTimeout      = flag.String("global-timeout", "60s", "Timeout spanning all operations")
+	argRampUpSize         = flag.Int("rampup-size", 100, "Size of rampup batch. Default rampup batch size is 100.")
+	argRampUpDelay        = flag.String("rampup-delay", "500ms", "Time between batch rampups")
+	argTearDownDelay      = flag.String("teardown-delay", "5s", "Graceperiod to complete remaining workers")
+	argBrokerUrl          = flag.String("broker", "", "Broker URL")
+	argUsername           = flag.String("username", "", "Username")
+	argPassword           = flag.String("password", "", "Password")
+	argLogLevel           = flag.Int("log-level", 0, "Log level (0=nothing, 1=errors, 2=debug, 3=error+debug)")
+	argProfileCpu         = flag.String("profile-cpu", "", "write cpu profile `file`")
+	argProfileMem         = flag.String("profile-mem", "", "write memory profile to `file`")
+	argHideProgress       = flag.Bool("no-progress", false, "Hide progress indicator")
+	argHelp               = flag.Bool("help", false, "Show help")
+	argSkipTLSVerification = flag.Bool("skip-tls-verification", false, "skip the tls verfication of the MQTT Connection")
 )
 
 type Result struct {
@@ -146,12 +147,13 @@ func main() {
 		}
 
 		go (&Worker{
-			WorkerId:         cid,
-			BrokerUrl:        *argBrokerUrl,
-			Username:         username,
-			Password:         password,
-			NumberOfMessages: num,
-			Timeout:          actionTimeout,
+			WorkerId:            cid,
+			BrokerUrl:           *argBrokerUrl,
+			Username:            username,
+			Password:            password,
+			SkipTLSVerification: *argSkipTLSVerification,
+			NumberOfMessages:    num,
+			Timeout:             actionTimeout,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
