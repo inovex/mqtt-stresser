@@ -10,12 +10,19 @@ import (
 )
 
 type Worker struct {
-	WorkerId         int
-	BrokerUrl        string
-	Username         string
-	Password         string
-	NumberOfMessages int
-	Timeout          time.Duration
+	WorkerId            int
+	BrokerUrl           string
+	Username            string
+	Password            string
+	SkipTLSVerification bool
+	NumberOfMessages    int
+	Timeout             time.Duration
+}
+
+func setSkipTLS(o *mqtt.ClientOptions) {
+	oldTLSCfg := o.TLSConfig
+	oldTLSCfg.InsecureSkipVerify = true
+	o.SetTLSConfig(&oldTLSCfg)
 }
 
 func (w *Worker) Run(ctx context.Context) {
@@ -38,7 +45,15 @@ func (w *Worker) Run(ctx context.Context) {
 
 	publisherOptions := mqtt.NewClientOptions().SetClientID(publisherClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
+	if  w.SkipTLSVerification {
+	   setSkipTLS(publisherOptions)
+	}
+
 	subscriberOptions := mqtt.NewClientOptions().SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
+
+	if w.SkipTLSVerification {
+	  setSkipTLS(subscriberOptions)
+	}
 
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 		queue <- [2]string{msg.Topic(), string(msg.Payload())}
