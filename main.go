@@ -86,12 +86,12 @@ func main() {
 		f, err := os.Create(*argProfileCpu)
 
 		if err != nil {
-			fmt.Printf("Could not create CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Could not create CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 
 		if err := pprof.StartCPUProfile(f); err != nil {
-			fmt.Printf("Could not start CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Could not start CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 	}
@@ -101,7 +101,7 @@ func main() {
 	password := *argPassword
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Printf("Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintln(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 
@@ -117,7 +117,7 @@ func main() {
 	}
 
 	if *argBrokerUrl == "" {
-		fmt.Println("'--broker' is empty. Abort.")
+		fmt.Fprintln(os.Stderr, "'--broker' is empty. Abort.")
 		os.Exit(1)
 	}
 
