@@ -17,6 +17,9 @@ type Worker struct {
 	SkipTLSVerification bool
 	NumberOfMessages    int
 	Timeout             time.Duration
+	Retained            bool
+	PublisherQoS        byte
+	SubscriberQoS       byte
 }
 
 func setSkipTLS(o *mqtt.ClientOptions) {
@@ -45,14 +48,14 @@ func (w *Worker) Run(ctx context.Context) {
 
 	publisherOptions := mqtt.NewClientOptions().SetClientID(publisherClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
-	if  w.SkipTLSVerification {
-	   setSkipTLS(publisherOptions)
+	if w.SkipTLSVerification {
+		setSkipTLS(publisherOptions)
 	}
 
 	subscriberOptions := mqtt.NewClientOptions().SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
 	if w.SkipTLSVerification {
-	  setSkipTLS(subscriberOptions)
+		setSkipTLS(subscriberOptions)
 	}
 
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
@@ -97,7 +100,7 @@ func (w *Worker) Run(ctx context.Context) {
 	}()
 
 	verboseLogger.Printf("[%d] subscribing to topic\n", w.WorkerId)
-	if token := subscriber.Subscribe(topicName, 0, nil); token.WaitTimeout(w.Timeout) && token.Error() != nil {
+	if token := subscriber.Subscribe(topicName, w.SubscriberQoS, nil); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
 			Event:        SubscribeFailedEvent,
@@ -117,7 +120,7 @@ func (w *Worker) Run(ctx context.Context) {
 	t0 := time.Now()
 	for i := 0; i < w.NumberOfMessages; i++ {
 		text := fmt.Sprintf("this is msg #%d!", i)
-		token := publisher.Publish(topicName, 0, false, text)
+		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
 		publishedCount++
 		token.WaitTimeout(w.Timeout)
 	}

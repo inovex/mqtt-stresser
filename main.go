@@ -28,21 +28,23 @@ var (
 	errorLogger   = log.New(os.Stderr, "ERROR: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 	verboseLogger = log.New(os.Stderr, "DEBUG: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
 
-	argNumClients         = flag.Int("num-clients", 10, "Number of concurrent clients")
-	argNumMessages        = flag.Int("num-messages", 10, "Number of messages shipped by client")
-	argTimeout            = flag.String("timeout", "5s", "Timeout for pub/sub actions")
-	argGlobalTimeout      = flag.String("global-timeout", "60s", "Timeout spanning all operations")
-	argRampUpSize         = flag.Int("rampup-size", 100, "Size of rampup batch. Default rampup batch size is 100.")
-	argRampUpDelay        = flag.String("rampup-delay", "500ms", "Time between batch rampups")
-	argTearDownDelay      = flag.String("teardown-delay", "5s", "Graceperiod to complete remaining workers")
-	argBrokerUrl          = flag.String("broker", "", "Broker URL")
-	argUsername           = flag.String("username", "", "Username")
-	argPassword           = flag.String("password", "", "Password")
-	argLogLevel           = flag.Int("log-level", 0, "Log level (0=nothing, 1=errors, 2=debug, 3=error+debug)")
-	argProfileCpu         = flag.String("profile-cpu", "", "write cpu profile `file`")
-	argProfileMem         = flag.String("profile-mem", "", "write memory profile to `file`")
-	argHideProgress       = flag.Bool("no-progress", false, "Hide progress indicator")
-	argHelp               = flag.Bool("help", false, "Show help")
+	argNumClients          = flag.Int("num-clients", 10, "Number of concurrent clients")
+	argNumMessages         = flag.Int("num-messages", 10, "Number of messages shipped by client")
+	argTimeout             = flag.String("timeout", "5s", "Timeout for pub/sub actions")
+	argGlobalTimeout       = flag.String("global-timeout", "60s", "Timeout spanning all operations")
+	argRampUpSize          = flag.Int("rampup-size", 100, "Size of rampup batch. Default rampup batch size is 100.")
+	argRampUpDelay         = flag.String("rampup-delay", "500ms", "Time between batch rampups")
+	argBrokerUrl           = flag.String("broker", "", "Broker URL")
+	argUsername            = flag.String("username", "", "Username")
+	argPassword            = flag.String("password", "", "Password")
+	argLogLevel            = flag.Int("log-level", 0, "Log level (0=nothing, 1=errors, 2=debug, 3=error+debug)")
+	argProfileCpu          = flag.String("profile-cpu", "", "write cpu profile `file`")
+	argProfileMem          = flag.String("profile-mem", "", "write memory profile to `file`")
+	argHideProgress        = flag.Bool("no-progress", false, "Hide progress indicator")
+	argHelp                = flag.Bool("help", false, "Show help")
+	argRetain              = flag.Bool("retain", false, "if set, the retained flag of the published mqtt messages is set")
+	argPublisherQoS        = flag.Int("publisher-qos", 0, "QoS level of published messages")
+	argSubscriberQoS       = flag.Int("subscriber-qos", 0, " QoS level for the subscriber")
 	argSkipTLSVerification = flag.Bool("skip-tls-verification", false, "skip the tls verfication of the MQTT Connection")
 )
 
@@ -62,6 +64,13 @@ type TimeoutError interface {
 	Error() string
 }
 
+func parseQosLevels(qos int, role string) (byte, error) {
+	if qos < 0 || qos > 2 {
+		return 0, fmt.Errorf("%d is an invalid QoS level for %s. Valid levels are 0, 1 and 2", qos, role)
+	}
+	return byte(qos), nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -77,12 +86,12 @@ func main() {
 		f, err := os.Create(*argProfileCpu)
 
 		if err != nil {
-			fmt.Printf("Could not create CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Could not create CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 
 		if err := pprof.StartCPUProfile(f); err != nil {
-			fmt.Printf("Could not start CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Could not start CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 	}
@@ -92,7 +101,7 @@ func main() {
 	password := *argPassword
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Printf("Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintln(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 
@@ -108,8 +117,24 @@ func main() {
 	}
 
 	if *argBrokerUrl == "" {
-		fmt.Println("'--broker' is empty. Abort.")
+		fmt.Fprintln(os.Stderr, "'--broker' is empty. Abort.")
 		os.Exit(1)
+	}
+
+	var publisherQoS, subscriberQoS byte
+
+	if lvl, err := parseQosLevels(*argPublisherQoS, "publisher"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else {
+		publisherQoS = lvl
+	}
+
+	if lvl, err := parseQosLevels(*argSubscriberQoS, "subscriber"); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else {
+		subscriberQoS = lvl
 	}
 
 	signalChan := make(chan os.Signal, 1)
@@ -154,6 +179,9 @@ func main() {
 			SkipTLSVerification: *argSkipTLSVerification,
 			NumberOfMessages:    num,
 			Timeout:             actionTimeout,
+			Retained:            *argRetain,
+			PublisherQoS:        publisherQoS,
+			SubscriberQoS:       subscriberQoS,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
