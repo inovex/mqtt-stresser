@@ -3,13 +3,34 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"context"
 	"fmt"
-	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"os"
 	"time"
+
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func (w *Worker) Run() {
+type Worker struct {
+	WorkerId            int
+	BrokerUrl           string
+	Username            string
+	Password            string
+	SkipTLSVerification bool
+	NumberOfMessages    int
+	Timeout             time.Duration
+	Retained            bool
+	PublisherQoS        byte
+	SubscriberQoS       byte
+}
+
+func setSkipTLS(o *mqtt.ClientOptions) {
+	oldTLSCfg := o.TLSConfig
+	oldTLSCfg.InsecureSkipVerify = true
+	o.SetTLSConfig(&oldTLSCfg)
+}
+
+func (w *Worker) Run(ctx context.Context) {
 	verboseLogger.Printf("[%d] initializing\n", w.WorkerId)
 
 	queue := make(chan [2]string)
@@ -22,7 +43,7 @@ func (w *Worker) Run() {
 	}
 
 	topicName := fmt.Sprintf(topicNameTemplate, hostname, w.WorkerId, t)
-	subscriberClientId := fmt.Sprintf(subscriberClientIdTemplate, hostname, w.WorkerId, t,)
+	subscriberClientId := fmt.Sprintf(subscriberClientIdTemplate, hostname, w.WorkerId, t)
 	publisherClientId := fmt.Sprintf(publisherClientIdTemplate, hostname, w.WorkerId, t)
 
 	verboseLogger.Printf("[%d] topic=%s subscriberClientId=%s publisherClientId=%s\n", cid, topicName, subscriberClientId, publisherClientId)
@@ -39,6 +60,14 @@ func (w *Worker) Run() {
 		ClientCAs:          x509.NewCertPool(),
 		InsecureSkipVerify: true}).SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
+  if w.SkipTLSVerification {
+		setSkipTLS(publisherOptions)
+	}
+
+	if w.SkipTLSVerification {
+		setSkipTLS(subscriberOptions)
+	}
+
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 		queue <- [2]string{msg.Topic(), string(msg.Payload())}
 	})
@@ -47,10 +76,10 @@ func (w *Worker) Run() {
 	subscriber := mqtt.NewClient(subscriberOptions)
 
 	verboseLogger.Printf("[%d] connecting publisher\n", w.WorkerId)
-	if token := publisher.Connect(); token.Wait() && token.Error() != nil {
+	if token := publisher.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "ConnectFailed",
+			Event:        ConnectFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -58,10 +87,10 @@ func (w *Worker) Run() {
 	}
 
 	verboseLogger.Printf("[%d] connecting subscriber\n", w.WorkerId)
-	if token := subscriber.Connect(); token.WaitTimeout(opTimeout) && token.Error() != nil {
+	if token := subscriber.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "ConnectFailed",
+			Event:        ConnectFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -72,7 +101,7 @@ func (w *Worker) Run() {
 	defer func() {
 		verboseLogger.Printf("[%d] unsubscribe\n", w.WorkerId)
 
-		if token := subscriber.Unsubscribe(topicName); token.WaitTimeout(opTimeout) && token.Error() != nil {
+		if token := subscriber.Unsubscribe(topicName); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 			fmt.Println(token.Error())
 			os.Exit(1)
 		}
@@ -81,10 +110,10 @@ func (w *Worker) Run() {
 	}()
 
 	verboseLogger.Printf("[%d] subscribing to topic\n", w.WorkerId)
-	if token := subscriber.Subscribe(topicName, 1, nil); token.WaitTimeout(opTimeout) && token.Error() != nil {
+	if token := subscriber.Subscribe(topicName, w.SubscriberQoS, nil); token.WaitTimeout(w.Timeout) && token.Error() != nil {
 		resultChan <- Result{
 			WorkerId:     w.WorkerId,
-			Event:        "SubscribeFailed",
+			Event:        SubscribeFailedEvent,
 			Error:        true,
 			ErrorMessage: token.Error(),
 		}
@@ -94,19 +123,18 @@ func (w *Worker) Run() {
 
 	verboseLogger.Printf("[%d] starting control loop %s\n", w.WorkerId, topicName)
 
-	timeout := make(chan bool, 1)
 	stopWorker := false
 	receivedCount := 0
 	publishedCount := 0
 
 	t0 := time.Now()
+  frequency, _ := time.ParseDuration(w.MsgFreq)
 	for i := 0; i < w.Nmessages; i++ {
 		text := fmt.Sprintf(w.MsgString, i)
-		frequency, _ := time.ParseDuration(w.MsgFreq)
-		time.Sleep(frequency)
-		token := publisher.Publish(topicName, 1, false, text)
+		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
 		publishedCount++
-		token.Wait()
+		token.WaitTimeout(w.Timeout)
+    time.Sleep(frequency)
 		verboseLogger.Printf("[%d] %d/%d Messages published after sleep\n", w.WorkerId, publishedCount, w.Nmessages)
 	}
 	publisher.Disconnect(5)
@@ -114,22 +142,17 @@ func (w *Worker) Run() {
 	publishTime := time.Since(t0)
 	verboseLogger.Printf("[%d] all messages published\n", w.WorkerId)
 
-	go func() {
-		time.Sleep(w.Timeout)
-		timeout <- true
-	}()
-
 	t0 = time.Now()
-	for receivedCount < w.Nmessages && !stopWorker {
+	for receivedCount < w.NumberOfMessages && !stopWorker {
 		select {
 		case <-queue:
 			receivedCount++
 
-			verboseLogger.Printf("[%d] %d/%d received\n", w.WorkerId, receivedCount, w.Nmessages)
-			if receivedCount == w.Nmessages {
+			verboseLogger.Printf("[%d] %d/%d received\n", w.WorkerId, receivedCount, w.NumberOfMessages)
+			if receivedCount == w.NumberOfMessages {
 				resultChan <- Result{
 					WorkerId:          w.WorkerId,
-					Event:             "Completed",
+					Event:             CompletedEvent,
 					PublishTime:       publishTime,
 					ReceiveTime:       time.Since(t0),
 					MessagesReceived:  receivedCount,
@@ -138,36 +161,34 @@ func (w *Worker) Run() {
 			} else {
 				resultChan <- Result{
 					WorkerId:          w.WorkerId,
-					Event:             "ProgressReport",
+					Event:             ProgressReportEvent,
 					PublishTime:       publishTime,
 					ReceiveTime:       time.Since(t0),
 					MessagesReceived:  receivedCount,
 					MessagesPublished: publishedCount,
 				}
 			}
-		case <-timeout:
-			verboseLogger.Printf("[%d] timeout!!\n", cid)
-			stopWorker = true
-
-			resultChan <- Result{
-				WorkerId:          w.WorkerId,
-				Event:             "TimeoutExceeded",
-				PublishTime:       publishTime,
-				MessagesReceived:  receivedCount,
-				MessagesPublished: publishedCount,
-				Error:             true,
+		case <-ctx.Done():
+			var event string
+			var isError bool
+			switch ctx.Err().(type) {
+			case TimeoutError:
+				verboseLogger.Printf("[%d] received abort signal due to test timeout", w.WorkerId)
+				event = TimeoutExceededEvent
+				isError = true
+			default:
+				verboseLogger.Printf("[%d] received abort signal", w.WorkerId)
+				event = AbortedEvent
+				isError = false
 			}
-		case <-abortChan:
-			verboseLogger.Printf("[%d] received abort signal", w.WorkerId)
 			stopWorker = true
-
 			resultChan <- Result{
 				WorkerId:          w.WorkerId,
-				Event:             "Aborted",
+				Event:             event,
 				PublishTime:       publishTime,
 				MessagesReceived:  receivedCount,
 				MessagesPublished: publishedCount,
-				Error:             false,
+				Error:             isError,
 			}
 		}
 	}

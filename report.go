@@ -6,6 +6,15 @@ import (
 	"sort"
 )
 
+const (
+	ConnectFailedEvent   = "ConnectFailed"
+	SubscribeFailedEvent = "SubscribeFailed"
+	TimeoutExceededEvent = "TimeoutExceeded"
+	AbortedEvent         = "Aborted"
+	CompletedEvent       = "Completed"
+	ProgressReportEvent  = "ProgressReport"
+)
+
 type Summary struct {
 	Clients           int
 	TotalMessages     int
@@ -60,26 +69,26 @@ func buildSummary(nClient int, nMessages int, results []Result) (Summary, error)
 			nErrors++
 
 			switch r.Event {
-			case "ConnectFailed":
+			case ConnectFailedEvent:
 				nConnectFailed++
-			case "SubscribeFailed":
+			case SubscribeFailedEvent:
 				nSubscribeFailed++
-			case "TimeoutExceeded":
+			case TimeoutExceededEvent:
 				nTimeoutExceeded++
-			case "Aborted":
+			case AbortedEvent:
 				nAborted++
 			}
 		}
 
-		if r.Event == "Completed" {
+		if r.Event == CompletedEvent {
 			nCompleted++
 		}
 
-		if r.Event == "ProgressReport" {
+		if r.Event == ProgressReportEvent {
 			nInProgress++
 		}
 
-		if r.Event == "Completed" || r.Event == "ProgressReport" {
+		if r.Event == CompletedEvent || r.Event == ProgressReportEvent {
 			publishPerformance = append(publishPerformance, float64(r.MessagesPublished)/r.PublishTime.Seconds())
 			receivePerformance = append(receivePerformance, float64(r.MessagesReceived)/r.ReceiveTime.Seconds())
 		}
@@ -186,20 +195,37 @@ func buildHistogram(series []float64, total int) map[float64]float64 {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(sort.Reverse(sort.Float64Slice(keys)))
+	sort.Sort(sort.Float64Slice(keys))
 	histogram := make(map[float64]float64)
 
+	prev := 0.0
 	for _, k := range keys {
-		histogram[k] = float64(bucketCount[k]) / float64(total)
+		cur := float64(bucketCount[k])/float64(total) + prev
+		histogram[k] = cur
+		prev = cur
 	}
 
 	return histogram
 }
 
 func printHistogram(histogram map[float64]float64) {
-	for k, v := range histogram {
-		fmt.Printf("  < %.0f msg/sec  %.0f%%\n", k, v*100)
+
+	type histEntry struct {
+		key   float64
+		value float64
 	}
+
+	var res []histEntry
+	for k, v := range histogram {
+		res = append(res, histEntry{key: k, value: v})
+	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].key < res[j].key
+	})
+	for _, r := range res {
+		fmt.Printf("  < %.0f msg/sec  %.0f%%\n", r.key, r.value*100)
+	}
+
 }
 
 func median(series []float64) float64 {

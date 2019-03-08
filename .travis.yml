@@ -1,10 +1,29 @@
+sudo: required
+
+services:
+  - docker
+
 language: go
 
 go:
-  - 1.8.x
+  - 1.10.x
 
 before_install:
   - set -e
 
 script:
   - make all
+  - make container
+
+after_success:
+  - |
+    if [[ "${TRAVIS_PULL_REQUEST?}" == "false" ]] && [[ -n "${TRAVIS_TAG?}" || "${TRAVIS_BRANCH?}" == master ]]; then
+      docker login -u "${DOCKER_USERNAME?}" -p "${DOCKER_PASSWORD?}"
+      version=""
+      if [[ -n "${TRAVIS_TAG?}" ]]; then
+        version="${TRAVIS_TAG?}"
+      else
+        version="${TRAVIS_COMMIT:0:7}-dev"
+      fi
+      make push-container VERSION="${version?}"
+    fi
