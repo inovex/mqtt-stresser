@@ -2,8 +2,8 @@ appname := mqtt-stresser
 namespace := inovex
 sources := $(wildcard *.go)
 
-build = GOOS=$(1) GOARCH=$(2) go build -mod=vendor -o build/$(appname)-$(1)-$(2)$(3)
-static-build = CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) GOARM=$(4) go build -mod=vendor -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)$(4)-static$(3) .
+build = GO111MODULE=on GOOS=$(1) GOARCH=$(2) go build -mod=vendor -o build/$(appname)-$(1)-$(2)$(3)
+static-build = GO111MODULE=on CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) GOARM=$(4) go build -mod=vendor -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)$(4)-static$(3) .
 tar = cd build && tar -cvzf $(appname)-$(1)-$(2).tar.gz $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 zip = cd build && zip $(appname)-$(1)-$(2).zip $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 
@@ -112,8 +112,8 @@ go.mod:
 
 
 vendor-update: go.mod
-	 go get -u=patch
+	GO111MODULE=on  go get -u=patch
 
 vendor: go.mod
-	go mod vendor
+	GO111MODULE=on go mod vendor
 
