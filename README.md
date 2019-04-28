@@ -18,6 +18,16 @@ Binaries are provided on Github, see https://github.com/inovex/mqtt-stresser.
 
 If you want to build the Docker container version of this, go to repository directory and simply type ``docker build .``
 
+### Update dependencies
+To update the used dependencies to the latest path version run:
+```bash
+make vendor-update vendor
+```
+If you want to bump the major version or set a specific version make your change in the `go.mod` file. Than run 
+```bash
+make vendor
+```
+
 ## Install
 
 Place the binary somewhere in a ``PATH`` directory and make it executable (``chmod +x mqtt-stresser``).
