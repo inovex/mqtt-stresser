@@ -2,8 +2,8 @@ appname := mqtt-stresser
 namespace := inovex
 sources := $(wildcard *.go)
 
-build = GOOS=$(1) GOARCH=$(2) go build -o build/$(appname)-$(1)-$(2)$(3)
-static-build = CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) GOARM=$(4) go build -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)$(4)-static$(3) .
+build = GOOS=$(1) GOARCH=$(2) go build -mod=vendor -o build/$(appname)-$(1)-$(2)$(3)
+static-build = CGO_ENABLED=0 GOOS=$(1) GOARCH=$(2) GOARM=$(4) go build -mod=vendor -a -installsuffix cgo -o build/$(appname)-$(1)-$(2)$(4)-static$(3) .
 tar = cd build && tar -cvzf $(appname)-$(1)-$(2).tar.gz $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 zip = cd build && zip $(appname)-$(1)-$(2).zip $(appname)-$(1)-$(2)$(3) && rm $(appname)-$(1)-$(2)$(3)
 
@@ -106,22 +106,14 @@ push-container:
 
 ##### Vendoring #####
 
-${GOPATH}/bin/dep:
-	go get -u github.com/golang/dep/cmd/dep
 
-Gopkg.lock: ${GOPATH}/bin/dep
-	${GOPATH}/bin/dep ensure --no-vendor
+go.mod:
+	go mod init
 
-Gopkg.toml: ${GOPATH}/bin/dep
-	${GOPATH}/bin/dep init
 
-vendor-update: Gopkg.toml Gopkg.lock
-	${GOPATH}/bin/dep ensure -update --no-vendor
-	${GOPATH}/bin/dep status
-	@echo "You can apply these updates via 'make vendor' or rollback via 'git checkout -- Gopkg.lock'"
+vendor-update: go.mod
+	 go get -u=patch
 
-vendor: Gopkg.toml Gopkg.lock
-	rm -rf vendor/
-	${GOPATH}/bin/dep ensure -vendor-only
-	${GOPATH}/bin/dep status
+vendor: go.mod
+	go mod vendor
 

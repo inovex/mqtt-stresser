@@ -4,6 +4,7 @@ Load testing tool to stress MQTT message broker
 
 ## Build
 
+You need at least golang version 1.12 to build the binaries.
 ```
 $ mkdir -p ${GOPATH}/src/github.com/inovex/
 $ git clone https://github.com/inovex/mqtt-stresser.git ${GOPATH}/src/github.com/inovex/mqtt-stresser/
