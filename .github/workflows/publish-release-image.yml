@@ -1,4 +1,4 @@
-name: Publish Develop Dockerimage
+name: Publish Release Dockerimage
 on:
   release:
     types: [published, created, edited]
