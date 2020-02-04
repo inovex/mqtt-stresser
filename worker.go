@@ -9,6 +9,20 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+type PayloadGenerator func(i int) string
+
+func defaultPayloadGen() PayloadGenerator {
+	return func(i int) string {
+		return fmt.Sprintf("this is msg #%d!", i)
+	}
+}
+
+func constantPayloadGenerator(payload string) PayloadGenerator {
+	return func(i int) string {
+		return payload
+	}
+}
+
 type Worker struct {
 	WorkerId            int
 	BrokerUrl           string
@@ -16,6 +30,7 @@ type Worker struct {
 	Password            string
 	SkipTLSVerification bool
 	NumberOfMessages    int
+	PayloadGenerator    PayloadGenerator
 	Timeout             time.Duration
 	Retained            bool
 	PublisherQoS        byte
@@ -119,7 +134,7 @@ func (w *Worker) Run(ctx context.Context) {
 
 	t0 := time.Now()
 	for i := 0; i < w.NumberOfMessages; i++ {
-		text := fmt.Sprintf("this is msg #%d!", i)
+		text := w.PayloadGenerator(i)
 		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
 		publishedCount++
 		token.WaitTimeout(w.Timeout)
