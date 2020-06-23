@@ -47,6 +47,9 @@ var (
 	argPublisherQoS        = flag.Int("publisher-qos", 0, "QoS level of published messages")
 	argSubscriberQoS       = flag.Int("subscriber-qos", 0, " QoS level for the subscriber")
 	argSkipTLSVerification = flag.Bool("skip-tls-verification", false, "skip the tls verfication of the MQTT Connection")
+	argCafile              = flag.String("cafile", "", "path to a file containing trusted CA certificates to enable encrypted certificate based communication.")
+	argKey                 = flag.String("key", "", "client private key for authentication, if required by server.")
+	argCert                = flag.String("cert", "", "client certificate for authentication, if required by server.")
 )
 
 type Result struct {
@@ -70,6 +73,34 @@ func parseQosLevels(qos int, role string) (byte, error) {
 		return 0, fmt.Errorf("%d is an invalid QoS level for %s. Valid levels are 0, 1 and 2", qos, role)
 	}
 	return byte(qos), nil
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func validateTLSFiles(argCafile, argKey, argCert *string) error {
+	if len(*argCafile) > 0 {
+		if !fileExists(*argCafile) {
+			return fmt.Errorf("CA file '%s' does not exist", *argCafile)
+		}
+	}
+	if len(*argKey) > 0 {
+		if !fileExists(*argKey) {
+			return fmt.Errorf("key file '%s' does not exist", *argKey)
+		}
+	}
+	if len(*argCert) > 0 {
+		if !fileExists(*argCert) {
+			return fmt.Errorf("cert file '%s' does not exist", *argCert)
+		}
+	}
+
+	return nil
 }
 
 func main() {
@@ -144,6 +175,29 @@ func main() {
 	} else {
 		subscriberQoS = lvl
 	}
+	var ca, cert, key []byte
+	if err:= validateTLSFiles(argCafile, argKey, argCert); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	} else{
+		var err error
+		ca, err = ioutil.ReadFile(*argCafile)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		cert, err = ioutil.ReadFile(*argCert)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		key, err = ioutil.ReadFile(*argKey)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -191,6 +245,9 @@ func main() {
 			Retained:            *argRetain,
 			PublisherQoS:        publisherQoS,
 			SubscriberQoS:       subscriberQoS,
+			CA:              	 ca,
+			Cert:                cert,
+			Key:                 key,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
