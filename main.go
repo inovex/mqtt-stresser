@@ -16,10 +16,9 @@ import (
 )
 
 var (
-	resultChan         = make(chan Result)
-	stopWaitLoop       = false
-	tearDownInProgress = false
-	randomSource       = rand.New(rand.NewSource(time.Now().UnixNano()))
+	resultChan   = make(chan Result)
+	stopWaitLoop = false
+	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-worker%d-%d"
 	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-worker%d-%d"
