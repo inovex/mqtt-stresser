@@ -196,7 +196,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		*argSkipTLSVerification = false
 	}
 
 	signalChan := make(chan os.Signal, 1)
