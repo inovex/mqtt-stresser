@@ -268,7 +268,7 @@ func main() {
 				errorLogger.Println(msg)
 			}
 
-			if *argHideProgress == false {
+			if !*argHideProgress {
 				if msg.Event == CompletedEvent {
 					fmt.Print(".")
 				}

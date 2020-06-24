@@ -195,7 +195,7 @@ func buildHistogram(series []float64, total int) map[float64]float64 {
 		keys = append(keys, k)
 	}
 
-	sort.Sort(sort.Float64Slice(keys))
+	sort.Float64s(keys)
 	histogram := make(map[float64]float64)
 
 	prev := 0.0
