@@ -37,7 +37,7 @@ type Worker struct {
 	Retained            bool
 	PublisherQoS        byte
 	SubscriberQoS       byte
-	CA					[]byte
+	CA                  []byte
 	Cert                []byte
 	Key                 []byte
 }

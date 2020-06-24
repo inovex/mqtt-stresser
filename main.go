@@ -176,10 +176,10 @@ func main() {
 		subscriberQoS = lvl
 	}
 	var ca, cert, key []byte
-	if err:= validateTLSFiles(argCafile, argKey, argCert); err != nil {
+	if err := validateTLSFiles(argCafile, argKey, argCert); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	} else{
+	} else {
 		var err error
 		ca, err = ioutil.ReadFile(*argCafile)
 		if err != nil {
@@ -196,8 +196,8 @@ func main() {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
+		*argSkipTLSVerification = false
 	}
-
 
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
@@ -245,7 +245,7 @@ func main() {
 			Retained:            *argRetain,
 			PublisherQoS:        publisherQoS,
 			SubscriberQoS:       subscriberQoS,
-			CA:              	 ca,
+			CA:                  ca,
 			Cert:                cert,
 			Key:                 key,
 		}).Run(testCtx)
