@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"os"
 	"time"
@@ -35,12 +37,48 @@ type Worker struct {
 	Retained            bool
 	PublisherQoS        byte
 	SubscriberQoS       byte
+	CA                  []byte
+	Cert                []byte
+	Key                 []byte
 }
 
 func setSkipTLS(o *mqtt.ClientOptions) {
 	oldTLSCfg := o.TLSConfig
 	oldTLSCfg.InsecureSkipVerify = true
 	o.SetTLSConfig(oldTLSCfg)
+}
+
+func NewTLSConfig(ca, certificate, privkey []byte) (*tls.Config, error) {
+	// Import trusted certificates from CA
+	certpool := x509.NewCertPool()
+	ok := certpool.AppendCertsFromPEM(ca)
+
+	if !ok {
+		return nil, fmt.Errorf("CA is invalid")
+	}
+
+	// Import client certificate/key pair
+	cert, err := tls.X509KeyPair(certificate, privkey)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create tls.Config with desired tls properties
+	return &tls.Config{
+		// RootCAs = certs used to verify server cert.
+		RootCAs: certpool,
+		// ClientAuth = whether to request cert from server.
+		// Since the server is set up for SSL, this happens
+		// anyways.
+		ClientAuth: tls.NoClientCert,
+		// ClientCAs = certs used to validate client cert.
+		ClientCAs: nil,
+		// InsecureSkipVerify = verify that cert contents
+		// match server. IP matches what is in cert etc.
+		InsecureSkipVerify: false,
+		// Certificates = list of certs client sends to server.
+		Certificates: []tls.Certificate{cert},
+	}, nil
 }
 
 func (w *Worker) Run(ctx context.Context) {
@@ -76,6 +114,15 @@ func (w *Worker) Run(ctx context.Context) {
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 		queue <- [2]string{msg.Topic(), string(msg.Payload())}
 	})
+
+	if len(w.CA) > 0 || len(w.Key) > 0 {
+		tlsConfig, err := NewTLSConfig(w.CA, w.Cert, w.Key)
+		if err != nil {
+			panic(err)
+		}
+		subscriberOptions.SetTLSConfig(tlsConfig)
+		publisherOptions.SetTLSConfig(tlsConfig)
+	}
 
 	publisher := mqtt.NewClient(publisherOptions)
 	subscriber := mqtt.NewClient(subscriberOptions)
