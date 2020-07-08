@@ -133,7 +133,7 @@ func main() {
 
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintf(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 
