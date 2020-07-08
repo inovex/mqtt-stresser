@@ -83,20 +83,20 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
-func validateTLSFiles(argCafile, argKey, argCert *string) error {
-	if len(*argCafile) > 0 {
-		if !fileExists(*argCafile) {
-			return fmt.Errorf("CA file '%s' does not exist", *argCafile)
+func validateTLSFiles(argCafile, argKey, argCert string) error {
+	if len(argCafile) > 0 {
+		if !fileExists(argCafile) {
+			return fmt.Errorf("CA file '%s' does not exist", argCafile)
 		}
 	}
-	if len(*argKey) > 0 {
-		if !fileExists(*argKey) {
-			return fmt.Errorf("key file '%s' does not exist", *argKey)
+	if len(argKey) > 0 {
+		if !fileExists(argKey) {
+			return fmt.Errorf("key file '%s' does not exist", argKey)
 		}
 	}
-	if len(*argCert) > 0 {
-		if !fileExists(*argCert) {
-			return fmt.Errorf("cert file '%s' does not exist", *argCert)
+	if len(argCert) > 0 {
+		if !fileExists(argCert) {
+			return fmt.Errorf("cert file '%s' does not exist", argCert)
 		}
 	}
 
@@ -176,7 +176,7 @@ func main() {
 		subscriberQoS = lvl
 	}
 	var ca, cert, key []byte
-	if err := validateTLSFiles(argCafile, argKey, argCert); err != nil {
+	if err := validateTLSFiles(*argCafile, *argKey, *argCert); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	} else {
