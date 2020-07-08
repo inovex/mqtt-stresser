@@ -24,6 +24,7 @@ jobs:
       run: make all
 
   linting:
+    name: Linting
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
