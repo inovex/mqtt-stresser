@@ -100,6 +100,13 @@ func validateTLSFiles(argCafile, argKey, argCert string) error {
 		}
 	}
 
+	if len(argKey) > 0 && len(argCert) < 1 {
+		return fmt.Errorf("A key file is specified but no certificate file")
+	}
+
+	if len(argKey) < 1 && len(argCert) > 0 {
+		return fmt.Errorf("A cert file is specified but no key file")
+	}
 	return nil
 }
 
