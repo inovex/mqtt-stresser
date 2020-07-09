@@ -16,10 +16,9 @@ import (
 )
 
 var (
-	resultChan         = make(chan Result)
-	stopWaitLoop       = false
-	tearDownInProgress = false
-	randomSource       = rand.New(rand.NewSource(time.Now().UnixNano()))
+	resultChan   = make(chan Result)
+	stopWaitLoop = false
+	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-worker%d-%d"
 	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-worker%d-%d"
@@ -134,7 +133,7 @@ func main() {
 
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintf(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 
@@ -269,7 +268,7 @@ func main() {
 				errorLogger.Println(msg)
 			}
 
-			if *argHideProgress == false {
+			if !*argHideProgress {
 				if msg.Event == CompletedEvent {
 					fmt.Print(".")
 				}
