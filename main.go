@@ -82,6 +82,7 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+// An error is returned of the given TLS configuration is invalid.
 func validateTLSFiles(argCafile, argKey, argCert string) error {
 	if len(argCafile) > 0 {
 		if !fileExists(argCafile) {
@@ -107,6 +108,18 @@ func validateTLSFiles(argCafile, argKey, argCert string) error {
 		return fmt.Errorf("A cert file is specified but no key file")
 	}
 	return nil
+}
+
+// loadTLSFile loads the given file. If the filename is empty neither data nor an error is returned.
+func loadTLSFile(fileName string) ([]byte, error) {
+	if len(fileName) > 0 {
+		data, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load TLS file: %s: %w", fileName, err)
+		}
+		return data, nil
+	}
+	return nil, nil
 }
 
 func main() {
@@ -185,23 +198,22 @@ func main() {
 	if err := validateTLSFiles(*argCafile, *argKey, *argCert); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
-	} else {
-		var err error
-		ca, err = ioutil.ReadFile(*argCafile)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		cert, err = ioutil.ReadFile(*argCert)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		key, err = ioutil.ReadFile(*argKey)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+	}
+
+	ca, err = loadTLSFile(*argCafile)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	cert, err = loadTLSFile(*argCert)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	key, err = loadTLSFile(*argKey)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	signalChan := make(chan os.Signal, 1)
