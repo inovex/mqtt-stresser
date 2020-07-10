@@ -43,7 +43,7 @@ type Summary struct {
 func buildSummary(nClient int, nMessages int, results []Result) (Summary, error) {
 
 	if len(results) == 0 {
-		return Summary{}, errors.New("No results collected")
+		return Summary{}, errors.New("no results collected")
 	}
 
 	totalMessages := nClient * nMessages
@@ -95,7 +95,7 @@ func buildSummary(nClient int, nMessages int, results []Result) (Summary, error)
 	}
 
 	if len(publishPerformance) == 0 {
-		return Summary{}, errors.New("No feasible results found")
+		return Summary{}, errors.New("no feasible results found")
 	}
 
 	sort.Float64s(publishPerformance)

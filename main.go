@@ -69,7 +69,7 @@ type TimeoutError interface {
 
 func parseQosLevels(qos int, role string) (byte, error) {
 	if qos < 0 || qos > 2 {
-		return 0, fmt.Errorf("%d is an invalid QoS level for %s. Valid levels are 0, 1 and 2", qos, role)
+		return 0, fmt.Errorf("%q is an invalid QoS level for %s. Valid levels are 0, 1 and 2", qos, role)
 	}
 	return byte(qos), nil
 }
@@ -86,17 +86,17 @@ func fileExists(filename string) bool {
 func validateTLSFiles(argCafile, argKey, argCert string) error {
 	if len(argCafile) > 0 {
 		if !fileExists(argCafile) {
-			return fmt.Errorf("CA file '%s' does not exist", argCafile)
+			return fmt.Errorf("CA file %q does not exist", argCafile)
 		}
 	}
 	if len(argKey) > 0 {
 		if !fileExists(argKey) {
-			return fmt.Errorf("key file '%s' does not exist", argKey)
+			return fmt.Errorf("key file %q does not exist", argKey)
 		}
 	}
 	if len(argCert) > 0 {
 		if !fileExists(argCert) {
-			return fmt.Errorf("cert file '%s' does not exist", argCert)
+			return fmt.Errorf("cert file %q does not exist", argCert)
 		}
 	}
 
@@ -115,7 +115,7 @@ func loadTLSFile(fileName string) ([]byte, error) {
 	if len(fileName) > 0 {
 		data, err := ioutil.ReadFile(fileName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load TLS file: %s: %w", fileName, err)
+			return nil, fmt.Errorf("failed to load TLS file: %q: %w", fileName, err)
 		}
 		return data, nil
 	}
@@ -137,12 +137,12 @@ func main() {
 		f, err := os.Create(*argProfileCpu)
 
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Could not create CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to create CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 
 		if err := pprof.StartCPUProfile(f); err != nil {
-			fmt.Fprintf(os.Stderr, "Could not start CPU profile: %s\n", err)
+			fmt.Fprintf(os.Stderr, "Failed to start CPU profile: %s\n", err)
 			os.Exit(1)
 		}
 	}
@@ -153,7 +153,7 @@ func main() {
 
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Could not parse '--timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintf(os.Stderr, "Failed to parse '--timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 
@@ -182,18 +182,19 @@ func main() {
 	var publisherQoS, subscriberQoS byte
 
 	if lvl, err := parseQosLevels(*argPublisherQoS, "publisher"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Failed to parse 'publisher-qos': %s\n", err)
 		os.Exit(1)
 	} else {
 		publisherQoS = lvl
 	}
 
 	if lvl, err := parseQosLevels(*argSubscriberQoS, "subscriber"); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintf(os.Stderr, "Failed to parse 'subscriber-qos': %s\n", err)
 		os.Exit(1)
 	} else {
 		subscriberQoS = lvl
 	}
+
 	var ca, cert, key []byte
 	if err := validateTLSFiles(*argCafile, *argKey, *argCert); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -230,7 +231,7 @@ func main() {
 
 	globalTimeout, err := time.ParseDuration(*argGlobalTimeout)
 	if err != nil {
-		fmt.Printf("Could not parse '--global-timeout': '%s' is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Printf("Failed parse '--global-timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 	testCtx, cancelFunc := context.WithTimeout(context.Background(), globalTimeout)
@@ -326,13 +327,13 @@ func main() {
 		f, err := os.Create(*argProfileMem)
 
 		if err != nil {
-			fmt.Printf("Could not create memory profile: %s\n", err)
+			fmt.Printf("Failed to create memory profile: %s\n", err)
 		}
 
 		runtime.GC() // get up-to-date statistics
 
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			fmt.Printf("Could not write memory profile: %s\n", err)
+			fmt.Printf("Failed to write memory profile: %s\n", err)
 		}
 		f.Close()
 	}
