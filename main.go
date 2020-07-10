@@ -182,14 +182,14 @@ func main() {
 	var publisherQoS, subscriberQoS byte
 
 	if lvl, err := parseQosLevels(*argPublisherQoS, "publisher"); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse 'publisher-qos': %s\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	} else {
 		publisherQoS = lvl
 	}
 
 	if lvl, err := parseQosLevels(*argSubscriberQoS, "subscriber"); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse 'subscriber-qos': %s\n", err)
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	} else {
 		subscriberQoS = lvl
