@@ -26,20 +26,21 @@ func constantPayloadGenerator(payload string) PayloadGenerator {
 }
 
 type Worker struct {
-	WorkerId            int
-	BrokerUrl           string
-	Username            string
-	Password            string
-	SkipTLSVerification bool
-	NumberOfMessages    int
-	PayloadGenerator    PayloadGenerator
-	Timeout             time.Duration
-	Retained            bool
-	PublisherQoS        byte
-	SubscriberQoS       byte
-	CA                  []byte
-	Cert                []byte
-	Key                 []byte
+	WorkerId             int
+	BrokerUrl            string
+	Username             string
+	Password             string
+	SkipTLSVerification  bool
+	NumberOfMessages     int
+	PayloadGenerator     PayloadGenerator
+	Timeout              time.Duration
+	Retained             bool
+	PublisherQoS         byte
+	SubscriberQoS        byte
+	CA                   []byte
+	Cert                 []byte
+	Key                  []byte
+	PauseBetweenMessages int
 }
 
 func setSkipTLS(o *mqtt.ClientOptions) {
@@ -185,6 +186,7 @@ func (w *Worker) Run(ctx context.Context) {
 		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
 		publishedCount++
 		token.WaitTimeout(w.Timeout)
+		time.Sleep(time.Duration(w.PauseBetweenMessages) * time.Second)
 	}
 	publisher.Disconnect(5)
 
