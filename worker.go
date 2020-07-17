@@ -40,7 +40,7 @@ type Worker struct {
 	CA                   []byte
 	Cert                 []byte
 	Key                  []byte
-	PauseBetweenMessages int
+	PauseBetweenMessages time.Duration
 }
 
 func setSkipTLS(o *mqtt.ClientOptions) {
@@ -186,7 +186,7 @@ func (w *Worker) Run(ctx context.Context) {
 		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
 		publishedCount++
 		token.WaitTimeout(w.Timeout)
-		time.Sleep(time.Duration(w.PauseBetweenMessages) * time.Second)
+		time.Sleep(w.PauseBetweenMessages)
 	}
 	publisher.Disconnect(5)
 

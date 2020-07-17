@@ -49,7 +49,7 @@ var (
 	argCafile               = flag.String("cafile", "", "path to a file containing trusted CA certificates to enable encrypted certificate based communication.")
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
-	argPauseBetweenMessages = flag.Int("pause-between-messages", 0, "Adds a pause (in seconds) between sending messages to simulate sensors sending messages infrequently")
+	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
 )
 
 type Result struct {
@@ -154,7 +154,7 @@ func main() {
 
 	actionTimeout, err := time.ParseDuration(*argTimeout)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to parse '--timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintf(os.Stderr, "Failed to parse '--timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argTimeout)
 		os.Exit(1)
 	}
 
@@ -237,6 +237,12 @@ func main() {
 	}
 	testCtx, cancelFunc := context.WithTimeout(context.Background(), globalTimeout)
 
+	pauseBetweenMessages, err := time.ParseDuration(*argPauseBetweenMessages)
+	if err != nil {
+		fmt.Printf("Failed parse '--pause-between-messages': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argPauseBetweenMessages)
+		os.Exit(1)
+	}
+
 	stopStartLoop := false
 	for cid := 0; cid < *argNumClients && !stopStartLoop; cid++ {
 
@@ -267,7 +273,7 @@ func main() {
 			CA:                   ca,
 			Cert:                 cert,
 			Key:                  key,
-			PauseBetweenMessages: *argPauseBetweenMessages,
+			PauseBetweenMessages: pauseBetweenMessages,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
