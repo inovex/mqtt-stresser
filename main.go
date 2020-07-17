@@ -232,14 +232,14 @@ func main() {
 
 	globalTimeout, err := time.ParseDuration(*argGlobalTimeout)
 	if err != nil {
-		fmt.Printf("Failed parse '--global-timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
+		fmt.Fprintf(os.Stderr, "Failed parse '--global-timeout': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argGlobalTimeout)
 		os.Exit(1)
 	}
 	testCtx, cancelFunc := context.WithTimeout(context.Background(), globalTimeout)
 
 	pauseBetweenMessages, err := time.ParseDuration(*argPauseBetweenMessages)
 	if err != nil {
-		fmt.Printf("Failed parse '--pause-between-messages': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argPauseBetweenMessages)
+		fmt.Fprintf(os.Stderr, "Failed parse '--pause-between-messages': %q is not a valid duration string. See https://golang.org/pkg/time/#ParseDuration for valid duration strings\n", *argPauseBetweenMessages)
 		os.Exit(1)
 	}
 
