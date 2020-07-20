@@ -50,6 +50,7 @@ var (
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
+	argSkipCertValidation   = flag.Bool("skip-certificate-validation", false, "Skip verify that server cert contents match server. For example: IP matches what is in cert etc")
 )
 
 type Result struct {
@@ -274,6 +275,7 @@ func main() {
 			Cert:                 cert,
 			Key:                  key,
 			PauseBetweenMessages: pauseBetweenMessages,
+			SkipCertValidation:   *argSkipCertValidation,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)

@@ -41,6 +41,7 @@ type Worker struct {
 	Cert                 []byte
 	Key                  []byte
 	PauseBetweenMessages time.Duration
+	SkipCertValidation   bool
 }
 
 func setSkipTLS(o *mqtt.ClientOptions) {
@@ -49,7 +50,7 @@ func setSkipTLS(o *mqtt.ClientOptions) {
 	o.SetTLSConfig(oldTLSCfg)
 }
 
-func NewTLSConfig(ca, certificate, privkey []byte) (*tls.Config, error) {
+func NewTLSConfig(ca, certificate, privkey []byte, skipCertValidation bool) (*tls.Config, error) {
 	// Import trusted certificates from CA
 	certpool := x509.NewCertPool()
 	ok := certpool.AppendCertsFromPEM(ca)
@@ -76,7 +77,7 @@ func NewTLSConfig(ca, certificate, privkey []byte) (*tls.Config, error) {
 		ClientCAs: nil,
 		// InsecureSkipVerify = verify that cert contents
 		// match server. IP matches what is in cert etc.
-		InsecureSkipVerify: false,
+		InsecureSkipVerify: skipCertValidation,
 		// Certificates = list of certs client sends to server.
 		Certificates: []tls.Certificate{cert},
 	}, nil
@@ -117,7 +118,7 @@ func (w *Worker) Run(ctx context.Context) {
 	})
 
 	if len(w.CA) > 0 || len(w.Key) > 0 {
-		tlsConfig, err := NewTLSConfig(w.CA, w.Cert, w.Key)
+		tlsConfig, err := NewTLSConfig(w.CA, w.Cert, w.Key, w.SkipCertValidation)
 		if err != nil {
 			panic(err)
 		}
