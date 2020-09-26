@@ -45,6 +45,9 @@ type Worker struct {
 
 func setSkipTLS(o *mqtt.ClientOptions) {
 	oldTLSCfg := o.TLSConfig
+	if oldTLSCfg == nil {
+		oldTLSCfg = &tls.Config{}
+	}
 	oldTLSCfg.InsecureSkipVerify = true
 	o.SetTLSConfig(oldTLSCfg)
 }
