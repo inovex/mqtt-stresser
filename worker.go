@@ -158,7 +158,7 @@ func (w *Worker) Run(ctx context.Context) {
 		verboseLogger.Printf("[%d] unsubscribe\n", w.WorkerId)
 
 		if token := subscriber.Unsubscribe(topicName); token.WaitTimeout(w.Timeout) && token.Error() != nil {
-			fmt.Printf("failed to unsubscribe: %v ", token.Error())
+			fmt.Printf("failed to unsubscribe: %v\n", token.Error())
 		}
 
 		subscriber.Disconnect(5)
