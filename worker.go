@@ -128,19 +128,7 @@ func (w *Worker) Run(ctx context.Context) {
 		publisherOptions.SetTLSConfig(tlsConfig)
 	}
 
-	publisher := mqtt.NewClient(publisherOptions)
 	subscriber := mqtt.NewClient(subscriberOptions)
-
-	verboseLogger.Printf("[%d] connecting publisher\n", w.WorkerId)
-	if token := publisher.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
-		resultChan <- Result{
-			WorkerId:     w.WorkerId,
-			Event:        ConnectFailedEvent,
-			Error:        true,
-			ErrorMessage: token.Error(),
-		}
-		return
-	}
 
 	verboseLogger.Printf("[%d] connecting subscriber\n", w.WorkerId)
 	if token := subscriber.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
@@ -173,6 +161,18 @@ func (w *Worker) Run(ctx context.Context) {
 			ErrorMessage: token.Error(),
 		}
 
+		return
+	}
+
+	publisher := mqtt.NewClient(publisherOptions)
+	verboseLogger.Printf("[%d] connecting publisher\n", w.WorkerId)
+	if token := publisher.Connect(); token.WaitTimeout(w.Timeout) && token.Error() != nil {
+		resultChan <- Result{
+			WorkerId:     w.WorkerId,
+			Event:        ConnectFailedEvent,
+			Error:        true,
+			ErrorMessage: token.Error(),
+		}
 		return
 	}
 
