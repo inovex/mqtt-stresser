@@ -248,7 +248,6 @@ func main() {
 
 		if cid%rampUpSize == 0 && cid > 0 {
 			fmt.Printf("%d worker started - waiting %s\n", cid, rampUpDelay)
-			time.Sleep(rampUpDelay)
 			select {
 			case <-time.NewTimer(rampUpDelay).C:
 			case s := <-signalChan:
