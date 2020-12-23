@@ -94,7 +94,7 @@ container: clean
 	docker build \
 		--build-arg BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")\
 		--build-arg VCS_REF=$(shell git rev-parse --short HEAD) \
-	 	--build-arg VERSION=$(shell git describe --all | sed  -e  's%tags/%%g'  -e 's%/%.%g' ) \
+	 	--build-arg VERSION=$(shell git describe --all | sed -e 's%tags/%%g' -e 's%/%.%g' ) \
 	 	-t $(namespace)/$(appname) .
 
 	 	docker run -it --rm $(namespace)/$(appname) --help
