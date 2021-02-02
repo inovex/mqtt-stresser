@@ -50,6 +50,7 @@ var (
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
+	argPubOnly              = flag.Bool("pub-only", false, "just publish, skip the subscriber process")
 )
 
 type Result struct {
@@ -273,6 +274,7 @@ func main() {
 			Cert:                 cert,
 			Key:                  key,
 			PauseBetweenMessages: pauseBetweenMessages,
+			PubSub: 			  !*argPubOnly,
 		}).Run(testCtx)
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
