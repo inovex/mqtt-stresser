@@ -105,15 +105,7 @@ func (w *Worker) Run(ctx context.Context) {
 
 	publisherOptions := mqtt.NewClientOptions().SetClientID(publisherClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
 
-	if w.SkipTLSVerification {
-		setSkipTLS(publisherOptions)
-	}
-
 	subscriberOptions := mqtt.NewClientOptions().SetClientID(subscriberClientId).SetUsername(w.Username).SetPassword(w.Password).AddBroker(w.BrokerUrl)
-
-	if w.SkipTLSVerification {
-		setSkipTLS(subscriberOptions)
-	}
 
 	subscriberOptions.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
 		queue <- [2]string{msg.Topic(), string(msg.Payload())}
@@ -126,6 +118,11 @@ func (w *Worker) Run(ctx context.Context) {
 		}
 		subscriberOptions.SetTLSConfig(tlsConfig)
 		publisherOptions.SetTLSConfig(tlsConfig)
+	}
+
+	if w.SkipTLSVerification {
+		setSkipTLS(publisherOptions)
+		setSkipTLS(subscriberOptions)
 	}
 
 	subscriber := mqtt.NewClient(subscriberOptions)
