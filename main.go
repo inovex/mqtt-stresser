@@ -4,9 +4,11 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/signal"
 	"runtime"
@@ -125,6 +127,11 @@ func loadTLSFile(fileName string) ([]byte, error) {
 
 func main() {
 	flag.Parse()
+
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
 
 	if flag.NFlag() < 1 || *argHelp {
 		flag.Usage()
