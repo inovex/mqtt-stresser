@@ -130,7 +130,10 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
+		err := http.ListenAndServe(":2112", nil)
+		if err != nil {
+			fmt.Printf("Failed to init prometheus metrics port: %v\n", err)
+		}
 	}()
 
 	if flag.NFlag() < 1 || *argHelp {
