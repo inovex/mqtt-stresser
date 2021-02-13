@@ -296,7 +296,7 @@ func main() {
 			}
 
 			if !*argHideProgress {
-				if msg.Event == CompletedEvent {
+				if msg.Event == ProgressReportEvent {
 					fmt.Print(".")
 				}
 
