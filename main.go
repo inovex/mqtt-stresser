@@ -11,6 +11,7 @@ import (
 	"os/signal"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -176,8 +177,13 @@ func main() {
 
 	payloadGenerator := defaultPayloadGen()
 	if len(*argConstantPayload) > 0 {
-		verboseLogger.Printf("Set constant payload to %s\n", *argConstantPayload)
-		payloadGenerator = constantPayloadGenerator(*argConstantPayload)
+		if strings.Index(*argConstantPayload, "@") == 0 {
+			verboseLogger.Printf("Set constant payload from file %s\n", *argConstantPayload)
+			payloadGenerator = filePayloadGenerator(*argConstantPayload)
+		}else {
+			verboseLogger.Printf("Set constant payload to %s\n", *argConstantPayload)
+			payloadGenerator = constantPayloadGenerator(*argConstantPayload)
+		}
 	}
 
 	var publisherQoS, subscriberQoS byte
