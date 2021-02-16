@@ -182,7 +182,7 @@ func main() {
 
 	payloadGenerator := defaultPayloadGen()
 	if len(*argConstantPayload) > 0 {
-		if strings.Index(*argConstantPayload, "@") == 0 {
+		if strings.HasPrefix(*argConstantPayload, "@") {
 			verboseLogger.Printf("Set constant payload from file %s\n", *argConstantPayload)
 			payloadGenerator = filePayloadGenerator(*argConstantPayload)
 		}else {
