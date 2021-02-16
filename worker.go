@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -22,6 +24,18 @@ func defaultPayloadGen() PayloadGenerator {
 func constantPayloadGenerator(payload string) PayloadGenerator {
 	return func(i int) string {
 		return payload
+	}
+}
+
+func filePayloadGenerator(filepath string) PayloadGenerator {
+	inputPath := strings.Replace(filepath, "@", "", 1)
+	content, err := ioutil.ReadFile(inputPath)
+	if err != nil {
+		fmt.Printf("error reading payload file: %v\n", err)
+		os.Exit(1)
+	}
+	return func(i int) string {
+		return string(content)
 	}
 }
 
