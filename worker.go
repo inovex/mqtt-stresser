@@ -194,14 +194,16 @@ func (w *Worker) Run(ctx context.Context) {
 	publishedCount := 0
 
 	t0 := time.Now()
-	for i := 0; i < w.NumberOfMessages; i++ {
-		text := w.PayloadGenerator(i)
-		token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
-		publishedCount++
-		token.WaitTimeout(w.Timeout)
-		time.Sleep(w.PauseBetweenMessages)
-	}
-	publisher.Disconnect(5)
+	go func() {
+		for i := 0; i < w.NumberOfMessages; i++ {
+			text := w.PayloadGenerator(i)
+			token := publisher.Publish(topicName, w.PublisherQoS, w.Retained, text)
+			publishedCount++
+			token.WaitTimeout(w.Timeout)
+			time.Sleep(w.PauseBetweenMessages)
+		}
+		publisher.Disconnect(5)
+	}()
 
 	publishTime := time.Since(t0)
 	verboseLogger.Printf("[%d] all messages published\n", w.WorkerId)
