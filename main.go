@@ -51,7 +51,7 @@ var (
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
-	argTopicBasePath		= flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argTopicBasePath        = flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
 )
 
 type Result struct {
@@ -185,7 +185,7 @@ func main() {
 		if strings.HasPrefix(*argConstantPayload, "@") {
 			verboseLogger.Printf("Set constant payload from file %s\n", *argConstantPayload)
 			payloadGenerator = filePayloadGenerator(*argConstantPayload)
-		}else {
+		} else {
 			verboseLogger.Printf("Set constant payload to %s\n", *argConstantPayload)
 			payloadGenerator = constantPayloadGenerator(*argConstantPayload)
 		}
