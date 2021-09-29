@@ -21,8 +21,8 @@ var (
 	stopWaitLoop = false
 	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	subscriberClientIdTemplate = "a:app:mariquita_1:sub-%s-worker%d-%d"
-	publisherClientIdTemplate  = "a:app:mariquita_1:pub-%s-worker%d-%d"
+	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-worker%d-%d"
+	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-worker%d-%d"
 	topicNameTemplate          = "internal/mqtt-stresser/%s/worker%d-%d"
 
 	errorLogger   = log.New(os.Stderr, "ERROR: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
@@ -52,6 +52,7 @@ var (
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
 	argTopicBasePath        = flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argClientIdPrefix       = flag.String("client-id-prefix", "", "client ID prefix, if empty the default is mqtt-stresser")
 )
 
 type Result struct {
