@@ -112,6 +112,10 @@ func (w *Worker) Run(ctx context.Context) {
 	}
 
 	topicName := fmt.Sprintf(topicNameTemplate, hostname, w.WorkerId, t)
+	if len(*argClientIdPrefix) > 0 {
+		subscriberClientIdTemplate = strings.Replace(subscriberClientIdTemplate, "mqtt-stresser", *argClientIdPrefix, 1)
+		publisherClientIdTemplate = strings.Replace(publisherClientIdTemplate, "mqtt-stresser", *argClientIdPrefix, 1)
+	}
 	subscriberClientId := fmt.Sprintf(subscriberClientIdTemplate, hostname, w.WorkerId, t)
 	publisherClientId := fmt.Sprintf(publisherClientIdTemplate, hostname, w.WorkerId, t)
 
