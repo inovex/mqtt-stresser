@@ -21,8 +21,8 @@ var (
 	stopWaitLoop = false
 	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	subscriberClientIdTemplate = "mqtt-stresser-sub-%s-worker%d-%d"
-	publisherClientIdTemplate  = "mqtt-stresser-pub-%s-worker%d-%d"
+	subscriberClientIdTemplate = "a:app:mariquita_1:sub-%s-worker%d-%d"
+	publisherClientIdTemplate  = "a:app:mariquita_1:pub-%s-worker%d-%d"
 	topicNameTemplate          = "internal/mqtt-stresser/%s/worker%d-%d"
 
 	errorLogger   = log.New(os.Stderr, "ERROR: ", log.Lmicroseconds|log.Ltime|log.Lshortfile)
