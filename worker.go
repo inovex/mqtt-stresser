@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -19,6 +20,24 @@ func defaultPayloadGen() PayloadGenerator {
 	return func(i int) string {
 		return fmt.Sprintf("this is msg #%d!", i)
 	}
+}
+
+func randomMessageGenerator(min, max int) PayloadGenerator {
+	rand.Seed(time.Now().UnixNano())
+	maxPayload := generateMaxPayload(max)
+	return func(i int) string {
+		size := rand.Intn(max-min+1) + min
+		return maxPayload[:size]
+	}
+}
+
+func generateMaxPayload(size int) string {
+	chars := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	buffer := make([]rune, size)
+	for i := range buffer {
+		buffer[i] = chars[i%len(chars)]
+	}
+	return string(buffer)
 }
 
 func constantPayloadGenerator(payload string) PayloadGenerator {

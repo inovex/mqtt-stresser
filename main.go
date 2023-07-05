@@ -51,7 +51,9 @@ var (
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
-	argTopicBasePath		= flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argTopicBasePath        = flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argMinMessageChars      = flag.Int("min-msg-chars", 0, "Minimum number of characters in message payload")
+	argMaxMessageChars      = flag.Int("max-msg-chars", 0, "Maximum number of characters in message payload")
 )
 
 type Result struct {
@@ -181,11 +183,16 @@ func main() {
 	}
 
 	payloadGenerator := defaultPayloadGen()
+	minChars := *argMinMessageChars
+	maxChars := *argMaxMessageChars
+	if minChars > 0 && maxChars > 0 && minChars < maxChars {
+		payloadGenerator = randomMessageGenerator(minChars, maxChars)
+	}
 	if len(*argConstantPayload) > 0 {
 		if strings.HasPrefix(*argConstantPayload, "@") {
 			verboseLogger.Printf("Set constant payload from file %s\n", *argConstantPayload)
 			payloadGenerator = filePayloadGenerator(*argConstantPayload)
-		}else {
+		} else {
 			verboseLogger.Printf("Set constant payload to %s\n", *argConstantPayload)
 			payloadGenerator = constantPayloadGenerator(*argConstantPayload)
 		}
