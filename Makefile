@@ -1,5 +1,6 @@
 appname := mqtt-stresser
-namespace := inovex
+namespace = ${IMG_NAMESPACE}
+namespace ?= inovex
 sources := vendor $(wildcard *.go)
 
 build = GO111MODULE=on GOOS=$(1) GOARCH=$(2) go build -mod=vendor -o build/$(appname)-$(1)-$(2)$(3)
