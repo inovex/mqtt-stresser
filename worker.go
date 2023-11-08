@@ -174,6 +174,13 @@ func (w *Worker) Run(ctx context.Context) {
 
 		return
 	}
+	resultChan <- Result{
+		WorkerId: w.WorkerId,
+		Event:    SubscribedEvent,
+	}
+
+	for <-ctlChan != StartPublishingEvent {
+	}
 
 	publisher := mqtt.NewClient(publisherOptions)
 	verboseLogger.Printf("[%d] connecting publisher\n", w.WorkerId)

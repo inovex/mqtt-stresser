@@ -18,6 +18,7 @@ import (
 
 var (
 	resultChan   = make(chan Result)
+	ctlChan      = make(chan string, *argNumClients)
 	stopWaitLoop = false
 	randomSource = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -51,7 +52,8 @@ var (
 	argKey                  = flag.String("key", "", "client private key for authentication, if required by server.")
 	argCert                 = flag.String("cert", "", "client certificate for authentication, if required by server.")
 	argPauseBetweenMessages = flag.String("pause-between-messages", "0s", "Adds a pause between sending messages to simulate sensors sending messages infrequently")
-	argTopicBasePath		= flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argTopicBasePath        = flag.String("topic-base-path", "", "topic base path, if empty the default is internal/mqtt-stresser")
+	argAwaitClients         = flag.Bool("await-clients", false, "wait for all clients to connect before publishing")
 )
 
 type Result struct {
@@ -185,7 +187,7 @@ func main() {
 		if strings.HasPrefix(*argConstantPayload, "@") {
 			verboseLogger.Printf("Set constant payload from file %s\n", *argConstantPayload)
 			payloadGenerator = filePayloadGenerator(*argConstantPayload)
-		}else {
+		} else {
 			verboseLogger.Printf("Set constant payload to %s\n", *argConstantPayload)
 			payloadGenerator = constantPayloadGenerator(*argConstantPayload)
 		}
@@ -268,6 +270,9 @@ func main() {
 			}
 		}
 
+		if !*argAwaitClients {
+			ctlChan <- StartPublishingEvent
+		}
 		go (&Worker{
 			WorkerId:             cid,
 			BrokerUrl:            *argBrokerUrl,
@@ -288,6 +293,7 @@ func main() {
 	}
 	fmt.Printf("%d worker started\n", *argNumClients)
 
+	subEvents := 0
 	finEvents := 0
 
 	results := make([]Result, *argNumClients)
@@ -313,6 +319,16 @@ func main() {
 
 				if msg.Error {
 					fmt.Print("E")
+				}
+			}
+
+			if msg.Event == SubscribedEvent {
+				subEvents++
+
+				if *argAwaitClients && subEvents == *argNumClients {
+					for i := 0; i < *argNumClients; i++ {
+						ctlChan <- StartPublishingEvent
+					}
 				}
 			}
 
