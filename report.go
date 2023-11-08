@@ -13,6 +13,8 @@ const (
 	AbortedEvent         = "Aborted"
 	CompletedEvent       = "Completed"
 	ProgressReportEvent  = "ProgressReport"
+	SubscribedEvent      = "Subscribed"
+	StartPublishingEvent = "StartPublishing"
 )
 
 type Summary struct {
